@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Search, TrendingUp, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, Search, TrendingUp, Pencil, Trash2, Download, ShoppingCart } from "lucide-react";
 import { COLORS, primaryBtnStyle, secondaryBtnStyle, iconBtnStyle } from "../styles.js";
 import { SectionHeader, RunwayBar, StatusPill } from "./Shared.jsx";
 import { downloadCSV } from "../csv.js";
@@ -52,7 +52,6 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     <div onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
-                    </div>
                   </td>
                   <td style={{ color: COLORS.sub }}>{p.category}</td>
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.stock}</td>
@@ -60,10 +59,45 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                   <td style={{ width: 160 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
                   <td>
-                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end" }}>
-                      <button title="Record sale" onClick={() => onRecordSale(p)} style={iconBtnStyle}><TrendingUp size={15} /></button>
-                      <button title="Edit" onClick={() => onEdit(p)} style={iconBtnStyle}><Pencil size={15} /></button>
-                      <button title="Delete" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
+                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center" }}>
+                      <button
+                        title="Record sale — automatically decreases stock"
+                        onClick={() => onRecordSale(p)}
+                        style={{
+                          ...iconBtnStyle,
+                          background: "#E8F5E9",
+                          color: "#2E7D32",
+                          fontWeight: 600,
+                          fontSize: 11.5,
+                          padding: "6px 10px",
+                          borderRadius: 8,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          border: "1px solid #C8E6C9",
+                        }}
+                      >
+                        <ShoppingCart size={13} /> Record sale
+                      </button>
+                      <button
+                        title="Edit product details, price, stock correction"
+                        onClick={() => onEdit(p)}
+                        style={{
+                          ...iconBtnStyle,
+                          background: "#FFF3E0",
+                          color: "#E65100",
+                          fontSize: 11,
+                          padding: "6px 8px",
+                          borderRadius: 8,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          border: "1px solid #FFE0B2",
+                        }}
+                      >
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button title="Delete product" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
                     </div>
                   </td>
                 </tr>
@@ -75,6 +109,5 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
           </tbody>
         </table>
       </div>
-    </div>
   );
 }

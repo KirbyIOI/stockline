@@ -5,7 +5,7 @@ import {
   iconBtnStyle, primaryBtnStyle, secondaryBtnStyle, COLORS, money,
 } from "../styles.js";
 
-export function ProductModal({ initial, onClose, onSave, error }) {
+export function ProductModal({ initial, onClose, onSave, error, allCategories = [] }) {
   const [form, setForm] = useState(initial || {
     name: "", sku: "", category: "", stock: 0, unitCost: 0, price: 0, leadTimeDays: 14, safetyStock: 10,
   });
@@ -45,7 +45,12 @@ export function ProductModal({ initial, onClose, onSave, error }) {
           </label>
           <label style={fieldLabelStyle}>
             Category
-            <input value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle} placeholder="Grains & Flour" />
+            <input value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle} placeholder="Grains & Flour" list="category-list" />
+            <datalist id="category-list">
+              {allCategories.map((cat) => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
           </label>
           {numField("stock", "Current stock (units)")}
           {numField("unitCost", "Unit cost (TSh)", 500)}
@@ -59,8 +64,7 @@ export function ProductModal({ initial, onClose, onSave, error }) {
             {initial ? "Save changes" : "Add product"}
           </button>
         </div>
-      </div>
-    </div>
+    </div></div>
   );
 }
 
@@ -82,8 +86,7 @@ export function SaleModal({ product, onClose, onRecord }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onRecord(units)} style={primaryBtnStyle}>Record &amp; update stock</button>
         </div>
-      </div>
-    </div>
+    </div></div>
   );
 }
 
@@ -105,8 +108,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onReceive(units)} style={primaryBtnStyle}>Add to stock</button>
         </div>
-      </div>
-    </div>
+    </div></div>
   );
 }
 
@@ -139,7 +141,6 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", fontFamily: "Inter", fontWeight: 700, fontSize: 13.5, background: "#FAFBFD" }}>
             <span>Total</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(total)}</span>
           </div>
-        </div>
         <textarea readOnly value={text} rows={items.length + 4}
           style={{ ...inputStyle, width: "100%", resize: "vertical", fontSize: 12.5, marginBottom: 6 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
@@ -151,7 +152,6 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
           </button>
           <button onClick={onConfirm} style={primaryBtnStyle}>Mark items as ordered</button>
         </div>
-      </div>
-    </div>
+    </div></div>
   );
 }
