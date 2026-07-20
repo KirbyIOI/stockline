@@ -1,6 +1,6 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../db.js";
 import { productMetrics } from "../forecast.js";
 import { money } from "../format.js";
@@ -14,9 +14,9 @@ export const publicRouter = Router();
 // Protected router: the actual chat endpoint, mounted behind requireAuth in index.js.
 export const router = Router();
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
-const apiKey = process.env.ANTHROPIC_API_KEY;
-const client = apiKey ? new Anthropic({ apiKey }) : null;
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const apiKey = process.env.GEMINI_API_KEY;
+const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -28,7 +28,7 @@ const chatLimiter = rateLimit({
 
 // GET /api/assistant/status — lets the frontend know whether to show the chat widget
 publicRouter.get("/status", (req, res) => {
-  res.json({ enabled: Boolean(client), model: MODEL });
+  res.json({ enabled: Boolean(genAI), model: MODEL });
 });
 
 function buildBusinessContext() {
@@ -95,8 +95,8 @@ Current business data:
 
 // POST /api/assistant/chat { message, history? } — ask a question about the current inventory data
 router.post("/chat", chatLimiter, async (req, res) => {
-  if (!client) {
-    return res.status(503).json({ error: "AI assistant is not configured. Set ANTHROPIC_API_KEY in server/.env to enable it." });
+  if (!genAI) {
+    return res.status(503).json({ error: "AI assistant is not configured. Set GEMINI_API_KEY in your environment to enable it." });
   }
   const { message, history } = req.body || {};
   if (!message || typeof message !== "string" || !message.trim()) {
@@ -104,28 +104,30 @@ router.post("/chat", chatLimiter, async (req, res) => {
   }
 
   const priorTurns = Array.isArray(history) ? history.slice(-10) : [];
-  const messages = [
+
+  // Convert Anthropic-style message history to Gemini's format
+  // Gemini uses "user" and "model" roles instead of "user" and "assistant"
+  const contents = [
     ...priorTurns
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-      .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) })),
-    { role: "user", content: message.slice(0, 2000) },
+      .map((m) => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content.slice(0, 4000) }],
+      })),
+    { role: "user", parts: [{ text: message.slice(0, 2000) }] },
   ];
 
   try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 600,
-      system: systemPrompt() + buildBusinessContext(),
-      messages,
+    const model = genAI.getGenerativeModel({ model: MODEL });
+    const result = await model.generateContent({
+      systemInstruction: { parts: [{ text: systemPrompt() + buildBusinessContext() }] },
+      contents,
     });
-    const text = response.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("\n")
-      .trim();
+    const text = result.response.text().trim();
     res.json({ reply: text || "I wasn't able to generate a response — try rephrasing the question." });
   } catch (err) {
     console.error("Assistant error:", err?.message || err);
     res.status(502).json({ error: "The AI assistant is temporarily unavailable. Please try again shortly." });
   }
 });
+
