@@ -45,7 +45,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
           </label>
           <label style={fieldLabelStyle}>
             Category
-            <input value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle} placeholder="Grains & Flour" list="category-list" />
+            <input value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle} placeholder="Grains and Flour" list="category-list" />
             <datalist id="category-list">
               {allCategories.map((cat) => (
                 <option key={cat} value={cat} />
@@ -64,7 +64,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
             {initial ? "Save changes" : "Add product"}
           </button>
         </div>
-    </div></div>
+    </div>
   );
 }
 
@@ -77,16 +77,16 @@ export function SaleModal({ product, onClose, onRecord }) {
           <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Record this week's sales</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} · {product.sku}</p>
+        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
         <label style={fieldLabelStyle}>
           Units sold this week
           <input type="number" min={0} value={units} onChange={(e) => setUnits(Number(e.target.value))} style={inputStyle} />
         </label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={() => onRecord(units)} style={primaryBtnStyle}>Record &amp; update stock</button>
+          <button onClick={() => onRecord(units)} style={primaryBtnStyle}>Record and update stock</button>
         </div>
-    </div></div>
+    </div>
   );
 }
 
@@ -99,7 +99,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} · {product.sku}</p>
+        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
         <label style={fieldLabelStyle}>
           Units received
           <input type="number" min={0} value={units} onChange={(e) => setUnits(Number(e.target.value))} style={inputStyle} />
@@ -108,9 +108,10 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onReceive(units)} style={primaryBtnStyle}>Add to stock</button>
         </div>
-    </div></div>
+    </div>
   );
 }
+
 
 export function PurchaseOrderModal({ items, onClose, onConfirm }) {
   const total = items.reduce((a, i) => a + i.cost, 0);
@@ -118,9 +119,9 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
     "PURCHASE ORDER",
     new Date().toLocaleDateString(),
     "",
-    ...items.map((i) => `${i.product.name} (${i.product.sku}) — ${i.qty} units — ${money(i.cost)}`),
+    ...items.map((i) => i.product.name + " (" + i.product.sku + ") - " + i.qty + " units - " + money(i.cost)),
     "",
-    `Total: ${money(total)}`,
+    "Total: " + money(total),
   ].join("\n");
   const [copied, setCopied] = useState(false);
 
@@ -131,16 +132,17 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
           <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Purchase order draft</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        <div style={{ border: `1px solid ${COLORS.line}`, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
+        <div style={{ border: "1px solid " + COLORS.line, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
           {items.map((i) => (
-            <div key={i.product.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${COLORS.line}`, fontFamily: "Inter", fontSize: 13 }}>
-              <span>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>· {i.qty} units</span></span>
+            <div key={i.product.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + COLORS.line, fontFamily: "Inter", fontSize: 13 }}>
+              <span>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>. {i.qty} units</span></span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(i.cost)}</span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", fontFamily: "Inter", fontWeight: 700, fontSize: 13.5, background: "#FAFBFD" }}>
             <span>Total</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(total)}</span>
           </div>
+        </div>
         <textarea readOnly value={text} rows={items.length + 4}
           style={{ ...inputStyle, width: "100%", resize: "vertical", fontSize: 12.5, marginBottom: 6 }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
@@ -152,6 +154,7 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
           </button>
           <button onClick={onConfirm} style={primaryBtnStyle}>Mark items as ordered</button>
         </div>
-    </div></div>
+      </div>
+    </div>
   );
 }
