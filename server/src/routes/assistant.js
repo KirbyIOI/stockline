@@ -14,7 +14,7 @@ export const publicRouter = Router();
 // Protected router: the actual chat endpoint, mounted behind requireAuth in index.js.
 export const router = Router();
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
@@ -105,7 +105,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
 
   const priorTurns = Array.isArray(history) ? history.slice(-10) : [];
 
-  // Convert Anthropic-style message history to Gemini's format
+  // Convert message history to Gemini's format
   // Gemini uses "user" and "model" roles instead of "user" and "assistant"
   const contents = [
     ...priorTurns
@@ -118,16 +118,18 @@ router.post("/chat", chatLimiter, async (req, res) => {
   ];
 
   try {
-    const model = genAI.getGenerativeModel({ model: MODEL });
-    const result = await model.generateContent({
-      systemInstruction: { parts: [{ text: systemPrompt() + buildBusinessContext() }] },
-      contents,
+    const systemContext = systemPrompt() + buildBusinessContext();
+    const model = genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: systemContext,
     });
+    const result = await model.generateContent({ contents });
     const text = result.response.text().trim();
     res.json({ reply: text || "I wasn't able to generate a response — try rephrasing the question." });
   } catch (err) {
     console.error("Assistant error:", err?.message || err);
-    res.status(502).json({ error: "The AI assistant is temporarily unavailable. Please try again shortly." });
+    // Send back the actual error message in dev to help debugging
+    const errorMsg = err?.message || "The AI assistant is temporarily unavailable. Please try again shortly.";
+    res.status(502).json({ error: errorMsg });
   }
 });
-
