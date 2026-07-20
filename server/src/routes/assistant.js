@@ -14,7 +14,7 @@ export const publicRouter = Router();
 // Protected router: the actual chat endpoint, mounted behind requireAuth in index.js.
 export const router = Router();
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
@@ -128,7 +128,6 @@ router.post("/chat", chatLimiter, async (req, res) => {
     res.json({ reply: text || "I wasn't able to generate a response — try rephrasing the question." });
   } catch (err) {
     console.error("Assistant error:", err?.message || err);
-    // Send back the actual error message in dev to help debugging
     const errorMsg = err?.message || "The AI assistant is temporarily unavailable. Please try again shortly.";
     res.status(502).json({ error: errorMsg });
   }
