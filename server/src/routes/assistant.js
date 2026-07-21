@@ -6,6 +6,126 @@ import { productMetrics } from "../forecast.js";
 import { money } from "../format.js";
 import { getSettings } from "../settings.js";
 
+// ---------------------------------------------------------------------------
+// Gemini Free Tier Rate Limiter – Sliding Window + Exponential Backoff
+// ---------------------------------------------------------------------------
+// Prevents 429 Too Many Requests / RESOURCE_EXHAUSTED errors by enforcing a
+// safe RPM ceiling and retrying with backoff when quota is exceeded.
+class GeminiRateLimiter {
+  constructor(options = {}) {
+    this.queue = [];
+    this.activeCount = 0;
+    this.requestTimestamps = [];
+
+    // Free tier safety limits
+    this.MAX_RPM = options.maxRpm || 10;            // Max 10 requests per minute
+    this.WINDOW_MS = options.windowMs || 60 * 1000;  // 1-minute sliding window
+    this.MAX_CONCURRENCY = options.maxConcurrency || 1;
+    this.MAX_RETRIES = options.maxRetries || 4;      // Max retry attempts on 429
+    this.BASE_DELAY = options.baseDelay || 2000;      // Initial backoff ms
+    this.MIN_INTERVAL = options.minInterval || 4500;   // 4.5s spacing between calls
+  }
+
+  /** Enqueue a Gemini API call, resolving with the result after throttling + retry. */
+  async enqueue(apiCallFn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const result = await this.executeWithRetry(apiCallFn);
+          resolve(result);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      this.processQueue();
+    });
+  }
+
+  /** Process the queue respecting RPM and concurrency ceilings. */
+  async processQueue() {
+    if (this.queue.length === 0 || this.activeCount >= this.MAX_CONCURRENCY) return;
+
+    // Prune timestamps older than the window
+    const now = Date.now();
+    this.requestTimestamps = this.requestTimestamps.filter((t) => now - t < this.WINDOW_MS);
+
+    // If at RPM capacity, wait until the oldest timestamp expires
+    if (this.requestTimestamps.length >= this.MAX_RPM) {
+      const oldest = this.requestTimestamps[0];
+      const waitTime = this.WINDOW_MS - (now - oldest) + 500;
+      setTimeout(() => this.processQueue(), waitTime);
+      return;
+    }
+
+    // Enforce minimum interval between requests
+    if (this.requestTimestamps.length > 0) {
+      const last = this.requestTimestamps[this.requestTimestamps.length - 1];
+      const elapsed = now - last;
+      if (elapsed < this.MIN_INTERVAL) {
+        setTimeout(() => this.processQueue(), this.MIN_INTERVAL - elapsed);
+        return;
+      }
+    }
+
+    const task = this.queue.shift();
+    if (task) {
+      this.activeCount++;
+      this.requestTimestamps.push(Date.now());
+      try {
+        await task();
+      } finally {
+        this.activeCount--;
+        this.processQueue();
+      }
+    }
+  }
+
+  /** Execute a Gemini API call with exponential backoff + jitter on 429. */
+  async executeWithRetry(fn) {
+    for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        const status = error?.status || error?.response?.status;
+        const message =
+          error?.message || error?.errorDetails?.[0]?.reason || "";
+        const is429 =
+          status === 429 ||
+          message.includes("RESOURCE_EXHAUSTED") ||
+          message.includes("Quota exceeded") ||
+          message.includes("Too Many Requests");
+
+        if (!is429 || attempt === this.MAX_RETRIES) {
+          throw error; // Non-retriable or out of retries
+        }
+
+        // Parse server-recommended retry delay if available (e.g. retryDelay: "21s")
+        let delay = this.BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
+        const retryAfter =
+          error?.retryDelay ||
+          error?.response?.headers?.["retry-after"] ||
+          error?.response?.headers?.["Retry-After"];
+        if (retryAfter) {
+          const parsed = parseFloat(String(retryAfter).replace(/s/i, ""));
+          if (!isNaN(parsed) && parsed > 0) {
+            delay = parsed * 1000 + 500;
+          }
+        }
+
+        console.warn(
+          `[429 Gemini Quota] Retry ${attempt + 1}/${this.MAX_RETRIES} in ${Math.round(delay)}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+    throw new Error("Max retries reached for Gemini API call.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Routes
+// ---------------------------------------------------------------------------
+
 // Public router: just tells the frontend whether the AI feature is configured,
 // so it can hide the chat widget entirely when no API key is set. No auth
 // required — it reveals nothing about the business's data.
@@ -17,6 +137,9 @@ export const router = Router();
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
+// Global Gemini rate limiter singleton
+const geminiLimiter = new GeminiRateLimiter();
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -123,7 +246,12 @@ router.post("/chat", chatLimiter, async (req, res) => {
       model: MODEL,
       systemInstruction: systemContext,
     });
-    const result = await model.generateContent({ contents });
+
+    // Wrap the API call with the rate limiter for 429 protection
+    const result = await geminiLimiter.enqueue(async () => {
+      return await model.generateContent({ contents });
+    });
+
     const text = result.response.text().trim();
     res.json({ reply: text || "I wasn't able to generate a response — try rephrasing the question." });
   } catch (err) {

@@ -36,10 +36,10 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
         />
       </div>
       <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.line}`, borderRadius: 14, overflow: "auto" }}>
-        <table style={{ minWidth: 750 }}>
+        <table style={{ minWidth: 800 }}>
           <thead>
             <tr>
-              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ minWidth: 240 }}></th>
+              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 280 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -58,8 +58,11 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub, whiteSpace: "nowrap" }}>{m.reorderPoint}</td>
                   <td style={{ width: 160, minWidth: 140 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
+                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap", color: COLORS.sub }}>
+                    {p.price.toLocaleString()}
+                  </td>
                   <td>
-                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
                       <button
                         title="Record sale"
                         onClick={() => onRecordSale(p)}
@@ -91,7 +94,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
               );
             })}
             {products.length === 0 && (
-              <tr><td colSpan={7} style={{ textAlign: "center", color: COLORS.sub, padding: 30 }}>No products match your search.</td></tr>
+              <tr><td colSpan={8} style={{ textAlign: "center", color: COLORS.sub, padding: 30 }}>No products match your search.</td></tr>
             )}
           </tbody>
         </table>
