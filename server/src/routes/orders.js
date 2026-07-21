@@ -8,6 +8,8 @@ function toOrderShape(row) {
   return {
     id: row.id,
     productId: row.product_id,
+    productName: row.productName || null,
+    productSku: row.productSku || null,
     qty: row.qty,
     status: row.status,
     placedAt: row.placed_at,
@@ -38,7 +40,7 @@ router.post("/", (req, res) => {
 
   const id = randomUUID();
   db.prepare("INSERT INTO orders (id, product_id, qty, status) VALUES (?, ?, ?, 'open')").run(id, productId, Number(qty));
-  const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(id);
+  const row = db.prepare("SELECT o.*, p.name AS productName, p.sku AS productSku FROM orders o JOIN products p ON p.id = o.product_id WHERE o.id = ?").get(id);
   res.status(201).json(toOrderShape(row));
 });
 
@@ -46,7 +48,7 @@ router.post("/", (req, res) => {
 router.patch("/:id/cancel", (req, res) => {
   const result = db.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ? AND status = 'open'").run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: "Open order not found" });
-  const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(req.params.id);
+  const row = db.prepare("SELECT o.*, p.name AS productName, p.sku AS productSku FROM orders o JOIN products p ON p.id = o.product_id WHERE o.id = ?").get(req.params.id);
   res.json(toOrderShape(row));
 });
 
@@ -61,6 +63,6 @@ router.patch("/:id/receive", (req, res) => {
     db.prepare("UPDATE orders SET status = 'received', received_at = datetime('now') WHERE id = ?").run(order.id);
   });
 
-  const row = db.prepare("SELECT * FROM orders WHERE id = ?").get(order.id);
+  const row = db.prepare("SELECT o.*, p.name AS productName, p.sku AS productSku FROM orders o JOIN products p ON p.id = o.product_id WHERE o.id = ?").get(order.id);
   res.json(toOrderShape(row));
 });
