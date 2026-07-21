@@ -20,10 +20,10 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
         action={
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={exportCSV} style={secondaryBtnStyle}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Download size={15} /> Export CSV</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Download size={15} /> Export CSV</span>
             </button>
             <button onClick={onAdd} style={primaryBtnStyle}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Plus size={15} /> Add product</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Plus size={15} /> Add product</span>
             </button>
           </div>
         }
@@ -39,7 +39,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
         <table style={{ minWidth: 800 }}>
           <thead>
             <tr>
-              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 280 }}></th>
+              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 380 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -62,7 +62,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     {p.price.toLocaleString()}
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
+                    <div style={{ display: "flex", gap: 16, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
                       <button
                         title="Record sale"
                         onClick={() => onRecordSale(p)}

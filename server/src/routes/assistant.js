@@ -18,12 +18,12 @@ class GeminiRateLimiter {
     this.requestTimestamps = [];
 
     // Free tier safety limits
-    this.MAX_RPM = options.maxRpm || 10;            // Max 10 requests per minute
-    this.WINDOW_MS = options.windowMs || 60 * 1000;  // 1-minute sliding window
+    this.MAX_RPM = options.maxRpm || 10;
+    this.WINDOW_MS = options.windowMs || 60 * 1000;
     this.MAX_CONCURRENCY = options.maxConcurrency || 1;
-    this.MAX_RETRIES = options.maxRetries || 4;      // Max retry attempts on 429
-    this.BASE_DELAY = options.baseDelay || 2000;      // Initial backoff ms
-    this.MIN_INTERVAL = options.minInterval || 4500;   // 4.5s spacing between calls
+    this.MAX_RETRIES = options.maxRetries || 5;
+    this.BASE_DELAY = options.baseDelay || 2000;
+    this.MIN_INTERVAL = options.minInterval || 4500;
   }
 
   /** Enqueue a Gemini API call, resolving with the result after throttling + retry. */
@@ -45,11 +45,9 @@ class GeminiRateLimiter {
   async processQueue() {
     if (this.queue.length === 0 || this.activeCount >= this.MAX_CONCURRENCY) return;
 
-    // Prune timestamps older than the window
     const now = Date.now();
     this.requestTimestamps = this.requestTimestamps.filter((t) => now - t < this.WINDOW_MS);
 
-    // If at RPM capacity, wait until the oldest timestamp expires
     if (this.requestTimestamps.length >= this.MAX_RPM) {
       const oldest = this.requestTimestamps[0];
       const waitTime = this.WINDOW_MS - (now - oldest) + 500;
@@ -57,7 +55,6 @@ class GeminiRateLimiter {
       return;
     }
 
-    // Enforce minimum interval between requests
     if (this.requestTimestamps.length > 0) {
       const last = this.requestTimestamps[this.requestTimestamps.length - 1];
       const elapsed = now - last;
@@ -80,45 +77,81 @@ class GeminiRateLimiter {
     }
   }
 
-  /** Execute a Gemini API call with exponential backoff + jitter on 429. */
+  /** Extract a retry delay (ms) from Gemini 429 error payloads.
+   *  Handles RetryInfo {"retryDelay":"39s"}, "retry in 39s", and headers. */
+  _parseRetryDelay(error) {
+    // 1. Direct property on the error object
+    if (error?.retryDelay) {
+      const parsed = parseFloat(String(error.retryDelay).replace(/s/gi, ""));
+      if (!isNaN(parsed) && parsed > 0) return parsed * 1000 + 500;
+    }
+
+    // 2. HTTP retry-after header
+    const retryAfter = error?.response?.headers?.["retry-after"] ||
+                       error?.response?.headers?.["Retry-After"];
+    if (retryAfter) {
+      const parsed = parseFloat(String(retryAfter));
+      if (!isNaN(parsed) && parsed > 0) return parsed * 1000;
+    }
+
+    // 3. Deep search of full error text for Google RPC RetryInfo JSON payload
+    const text = typeof error === "string" ? error :
+                 error?.message || error?.toString?.() || JSON.stringify(error);
+    // "retryDelay":"39.34646009s"
+    const retryInfoMatch = text.match(/"retryDelay"\s*:\s*"([\d.]+)s"/i);
+    if (retryInfoMatch) {
+      const seconds = parseFloat(retryInfoMatch[1]);
+      if (!isNaN(seconds) && seconds > 0) return seconds * 1000 + 500;
+    }
+    // "Please retry in 39.34646009s"
+    const retryInMatch = text.match(/(?:retry|try\s*again)\s+in\s+([\d.]+)\s*s(?:econds?)?/i);
+    if (retryInMatch) {
+      const seconds = parseFloat(retryInMatch[1]);
+      if (!isNaN(seconds) && seconds > 0) return seconds * 1000 + 500;
+    }
+
+    return null;
+  }
+
+  /** Execute with exponential backoff + jitter on 429. */
   async executeWithRetry(fn) {
     for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
       try {
         return await fn();
       } catch (error) {
+        // Check full error text for 429/quota signals
+        const errText = error?.message || error?.toString?.() || JSON.stringify(error);
         const status = error?.status || error?.response?.status;
-        const message =
-          error?.message || error?.errorDetails?.[0]?.reason || "";
-        const is429 =
+        const isRetriable =
           status === 429 ||
-          message.includes("RESOURCE_EXHAUSTED") ||
-          message.includes("Quota exceeded") ||
-          message.includes("Too Many Requests");
+          errText.includes("429") ||
+          errText.includes("RESOURCE_EXHAUSTED") ||
+          errText.includes("Quota exceeded") ||
+          errText.includes("quota") ||
+          errText.includes("Too Many Requests") ||
+          errText.includes("rate_limit") ||
+          errText.includes("RETRY_INFO");
 
-        if (!is429 || attempt === this.MAX_RETRIES) {
-          throw error; // Non-retriable or out of retries
+        if (!isRetriable) throw error;
+
+        // Use server-recommended delay if available (RetryInfo), otherwise exponential backoff
+        let delay = this._parseRetryDelay(error);
+        if (delay === null) {
+          delay = this.BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
         }
 
-        // Parse server-recommended retry delay if available (e.g. retryDelay: "21s")
-        let delay = this.BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
-        const retryAfter =
-          error?.retryDelay ||
-          error?.response?.headers?.["retry-after"] ||
-          error?.response?.headers?.["Retry-After"];
-        if (retryAfter) {
-          const parsed = parseFloat(String(retryAfter).replace(/s/i, ""));
-          if (!isNaN(parsed) && parsed > 0) {
-            delay = parsed * 1000 + 500;
-          }
+        if (attempt >= this.MAX_RETRIES) {
+          throw new Error(
+            `Gemini API still unavailable after ${this.MAX_RETRIES} retries. Last delay was ${Math.round(delay)}ms.`
+          );
         }
 
         console.warn(
-          `[429 Gemini Quota] Retry ${attempt + 1}/${this.MAX_RETRIES} in ${Math.round(delay)}ms...`
+          `[429 Gemini Quota] Attempt ${attempt + 1}/${this.MAX_RETRIES} — waiting ${Math.round(delay)}ms before retry`
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
-    throw new Error("Max retries reached for Gemini API call.");
   }
 }
 
@@ -126,19 +159,13 @@ class GeminiRateLimiter {
 // Routes
 // ---------------------------------------------------------------------------
 
-// Public router: just tells the frontend whether the AI feature is configured,
-// so it can hide the chat widget entirely when no API key is set. No auth
-// required — it reveals nothing about the business's data.
 export const publicRouter = Router();
-
-// Protected router: the actual chat endpoint, mounted behind requireAuth in index.js.
 export const router = Router();
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
-// Global Gemini rate limiter singleton
 const geminiLimiter = new GeminiRateLimiter();
 
 const chatLimiter = rateLimit({
@@ -149,7 +176,6 @@ const chatLimiter = rateLimit({
   message: { error: "Too many questions at once — wait a moment and try again." },
 });
 
-// GET /api/assistant/status — lets the frontend know whether to show the chat widget
 publicRouter.get("/status", (req, res) => {
   res.json({ enabled: Boolean(genAI), model: MODEL });
 });
@@ -216,7 +242,6 @@ Current business data:
 `;
 }
 
-// POST /api/assistant/chat { message, history? } — ask a question about the current inventory data
 router.post("/chat", chatLimiter, async (req, res) => {
   if (!genAI) {
     return res.status(503).json({ error: "AI assistant is not configured. Set GEMINI_API_KEY in your environment to enable it." });
@@ -227,9 +252,6 @@ router.post("/chat", chatLimiter, async (req, res) => {
   }
 
   const priorTurns = Array.isArray(history) ? history.slice(-10) : [];
-
-  // Convert message history to Gemini's format
-  // Gemini uses "user" and "model" roles instead of "user" and "assistant"
   const contents = [
     ...priorTurns
       .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -247,7 +269,7 @@ router.post("/chat", chatLimiter, async (req, res) => {
       systemInstruction: systemContext,
     });
 
-    // Wrap the API call with the rate limiter for 429 protection
+    // Throttle + retry the API call through the rate limiter queue
     const result = await geminiLimiter.enqueue(async () => {
       return await model.generateContent({ contents });
     });
