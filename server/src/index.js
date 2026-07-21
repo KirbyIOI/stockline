@@ -15,6 +15,7 @@ import { router as settingsRouter } from "./routes/settings.js";
 import { router as productsRouter } from "./routes/products.js";
 import { router as ordersRouter } from "./routes/orders.js";
 import { router as dashboardRouter } from "./routes/dashboard.js";
+import { router as salesRouter } from "./routes/sales.js";
 import { router as assistantRouter, publicRouter as assistantPublicRouter } from "./routes/assistant.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,6 +42,7 @@ app.use("/api/assistant", requireAuth, assistantRouter);
 app.use("/api/products", requireAuth, productsRouter);
 app.use("/api/orders", requireAuth, ordersRouter);
 app.use("/api/dashboard", requireAuth, dashboardRouter);
+app.use("/api/sales-history", requireAuth, salesRouter);
 app.use("/api/settings", requireAuth, settingsRouter); // GET is for any user, PUT checks requireAdmin itself
 app.use("/api/users", requireAuth, requireAdmin, usersRouter); // whole router is admin-only
 

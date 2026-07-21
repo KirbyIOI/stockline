@@ -5,3 +5,10 @@ dist/
 server/data/
 *.log
 .DS_Store
+fix_*.js
+write_*.js
+rewrite_*.js
+gen_*.js
+diag*.js
+*.tmp
+*.bak

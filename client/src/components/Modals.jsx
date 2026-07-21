@@ -24,7 +24,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, margin: 0, color: COLORS.ink }}>
+          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 18, margin: 0, color: COLORS.ink }}>
             {initial ? "Edit product" : "Add product"}
           </h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
@@ -64,6 +64,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
             {initial ? "Save changes" : "Add product"}
           </button>
         </div>
+      </div>
     </div>
   );
 }
@@ -74,7 +75,7 @@ export function SaleModal({ product, onClose, onRecord }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Record this week's sales</h3>
+          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Record this week\"s sales</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
@@ -86,6 +87,7 @@ export function SaleModal({ product, onClose, onRecord }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onRecord(units)} style={primaryBtnStyle}>Record and update stock</button>
         </div>
+      </div>
     </div>
   );
 }
@@ -96,7 +98,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
+          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
@@ -108,10 +110,10 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onReceive(units)} style={primaryBtnStyle}>Add to stock</button>
         </div>
+      </div>
     </div>
   );
 }
-
 
 export function PurchaseOrderModal({ items, onClose, onConfirm }) {
   const total = items.reduce((a, i) => a + i.cost, 0);
@@ -129,18 +131,18 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Purchase order draft</h3>
+          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Purchase order draft</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <div style={{ border: "1px solid " + COLORS.line, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
           {items.map((i) => (
             <div key={i.product.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + COLORS.line, fontFamily: "Inter", fontSize: 13 }}>
-              <span>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>. {i.qty} units</span></span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(i.cost)}</span>
+              <span style={{ flex: 1 }}>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "\"IBM Plex Mono\", monospace", fontSize: 11.5 }}>{i.qty} units</span></span>
+              <span style={{ fontFamily: "\"IBM Plex Mono\", monospace" }}>{money(i.cost)}</span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", fontFamily: "Inter", fontWeight: 700, fontSize: 13.5, background: "#FAFBFD" }}>
-            <span>Total</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(total)}</span>
+            <span>Total</span><span style={{ fontFamily: "\"IBM Plex Mono\", monospace" }}>{money(total)}</span>
           </div>
         </div>
         <textarea readOnly value={text} rows={items.length + 4}

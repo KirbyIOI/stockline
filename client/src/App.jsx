@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { LayoutDashboard, Boxes, TrendingUp, AlertTriangle, LogOut, Menu, X, Settings as SettingsIcon, ShieldCheck, User as UserIcon } from "lucide-react";
+import { LayoutDashboard, Boxes, TrendingUp, AlertTriangle, LogOut, Menu, X, Settings as SettingsIcon, ShieldCheck, User as UserIcon, ShoppingCart, Package } from "lucide-react";
 import { api, auth, setUnauthorizedHandler } from "./api.js";
 import { FONT_IMPORT, COLORS, setCurrencySymbol } from "./styles.js";
 import { ProductModal, SaleModal, ReceiveModal } from "./components/Modals.jsx";
@@ -9,12 +9,16 @@ import Forecast from "./components/Forecast.jsx";
 import Alerts from "./components/Alerts.jsx";
 import Login from "./components/Login.jsx";
 import Settings from "./components/Settings.jsx";
+import SalesHistory from "./components/SalesHistory.jsx";
+import OrderHistory from "./components/OrderHistory.jsx";
 import AIAssistant from "./components/AIAssistant.jsx";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "inventory", label: "Inventory", icon: Boxes },
   { id: "forecast", label: "Sales Forecast", icon: TrendingUp },
+  { id: "sales-history", label: "Sales History", icon: ShoppingCart },
+  { id: "order-history", label: "Purchase Orders", icon: Package },
   { id: "alerts", label: "Alerts", icon: AlertTriangle },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -338,6 +342,8 @@ export default function App() {
             onReceive={(p) => setReceiveFor(p)}
           />
         )}
+        {view === "sales-history" && <SalesHistory />}
+        {view === "order-history" && <OrderHistory />}
         {view === "settings" && (
           <Settings me={me} onSettingsChanged={(updated) => setAppSettings(updated)} />
         )}

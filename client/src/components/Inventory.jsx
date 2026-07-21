@@ -11,9 +11,8 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
       const m = metrics[p.id];
       return [p.name, p.sku, p.category, p.stock, m.reorderPoint, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.status, p.unitCost, p.price];
     });
-    downloadCSV(`stockline-inventory-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
+    downloadCSV(`stockline-inventory-${new Date().getISOString().slice(0, 10)}.csv`, [header, ...rows]);
   };
-
   return (
     <div>
       <SectionHeader
@@ -36,11 +35,11 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
           style={{ border: "none", outline: "none", fontFamily: "Inter", fontSize: 13.5, width: "100%" }}
         />
       </div>
-      <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.line}`, borderRadius: 14, overflow: "hidden" }}>
-        <table>
+      <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.line}`, borderRadius: 14, overflow: "auto" }}>
+        <table style={{ minWidth: 750 }}>
           <thead>
             <tr>
-              <th>Product</th><th>Category</th><th>Stock</th><th>Reorder pt.</th><th>Runway</th><th>Status</th><th></th>
+              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ minWidth: 240 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -52,52 +51,40 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     <div onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
+                    </div>
                   </td>
                   <td style={{ color: COLORS.sub }}>{p.category}</td>
-                  <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.stock}</td>
-                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub }}>{m.reorderPoint}</td>
-                  <td style={{ width: 160 }}><RunwayBar p={p} m={m} /></td>
+                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap" }}>{p.stock}</td>
+                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub, whiteSpace: "nowrap" }}>{m.reorderPoint}</td>
+                  <td style={{ width: 160, minWidth: 140 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
                   <td>
-                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
                       <button
-                        title="Record sale — automatically decreases stock"
+                        title="Record sale"
                         onClick={() => onRecordSale(p)}
                         style={{
-                          ...iconBtnStyle,
-                          background: "#E8F5E9",
-                          color: "#2E7D32",
-                          fontWeight: 600,
-                          fontSize: 11.5,
-                          padding: "6px 10px",
-                          borderRadius: 8,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 5,
-                          border: "1px solid #C8E6C9",
+                          ...iconBtnStyle, background: "#E8F5E9", color: "#2E7D32",
+                          fontWeight: 600, fontSize: 11.5, padding: "6px 10px",
+                          borderRadius: 8, display: "inline-flex", alignItems: "center",
+                          gap: 5, border: "1px solid #C8E6C9", whiteSpace: "nowrap",
                         }}
                       >
                         <ShoppingCart size={13} /> Record sale
                       </button>
                       <button
-                        title="Edit product details, price, stock correction"
+                        title="Edit product"
                         onClick={() => onEdit(p)}
                         style={{
-                          ...iconBtnStyle,
-                          background: "#FFF3E0",
-                          color: "#E65100",
-                          fontSize: 11,
-                          padding: "6px 8px",
-                          borderRadius: 8,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
+                          ...iconBtnStyle, background: "#FFF3E0", color: "#E65100",
+                          fontSize: 11, padding: "6px 8px", borderRadius: 8,
+                          display: "inline-flex", alignItems: "center", gap: 4,
                           border: "1px solid #FFE0B2",
                         }}
                       >
                         <Pencil size={12} /> Edit
                       </button>
-                      <button title="Delete product" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
+                      <button title="Delete" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
                     </div>
                   </td>
                 </tr>
@@ -109,5 +96,6 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
           </tbody>
         </table>
       </div>
+    </div>
   );
 }
