@@ -4,7 +4,7 @@ import "dotenv/config";
 import { getUserByUsername } from "./users.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const TOKEN_TTL = "12h";
+const TOKEN_TTL = "7d";
 
 if (!JWT_SECRET && process.env.NODE_ENV === "production") {
   // Fail loudly in production rather than silently signing tokens with an
