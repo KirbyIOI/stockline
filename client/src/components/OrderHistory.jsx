@@ -67,6 +67,7 @@ function CreateOrderModal({ products, onClose, onCreate }) {
             Place order
           </button>
         </div>
+      </div>
     </div>
   )
 }
@@ -136,15 +137,19 @@ export default function OrderHistory() {
         <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 12, padding: "14px 18px", flex: 1, minWidth: 120 }}>
           <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginBottom: 4 }}>Total</div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, color: COLORS.ink }}>{orders.length}</div>
+        </div>
         <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 12, padding: "14px 18px", flex: 1, minWidth: 120 }}>
           <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginBottom: 4 }}>Open</div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, color: COLORS.amber }}>{orders.filter((o) => o.status === "open").length}</div>
+        </div>
         <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 12, padding: "14px 18px", flex: 1, minWidth: 120 }}>
           <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginBottom: 4 }}>Received</div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, color: COLORS.teal }}>{orders.filter((o) => o.status === "received").length}</div>
+        </div>
         <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 12, padding: "14px 18px", flex: 1, minWidth: 120 }}>
           <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginBottom: 4 }}>Cancelled</div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, color: COLORS.rose }}>{orders.filter((o) => o.status === "cancelled").length}</div>
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
@@ -165,38 +170,39 @@ export default function OrderHistory() {
             </button>
           ))}
         </div>
+      </div>
 
       <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 14, overflow: "hidden" }}>
-        <table>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th>Date Placed</th>
-              <th>Product</th>
-              <th>SKU</th>
-              <th>Qty</th>
-              <th>Status</th>
-              <th>Received</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Date Placed</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Product</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>SKU</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Qty</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Status</th>
+              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Received</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} style={{ textAlign: "center", color: COLORS.sub, padding: 30 }}>Loading...</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>Loading...</td></tr>
             ) : f.length === 0 ? (
-              <tr><td colSpan={6} style={{ textAlign: "center", color: COLORS.sub, padding: 30 }}>
+              <tr><td colSpan={6} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>
                 {search || filter !== "all" ? "No matches." : "No orders yet."}
               </td></tr>
             ) : f.map((o) => (
-              <tr key={o.id}>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, whiteSpace: "nowrap" }}>
+              <tr key={o.id} style={{ borderBottom: "1px solid " + COLORS.line }}>
+                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, whiteSpace: "nowrap", padding: "12px 16px" }}>
                   {new Date(o.placedAt).toLocaleString()}
                 </td>
-                <td style={{ fontWeight: 500 }}>{o.productName || "---"}</td>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub }}>
+                <td style={{ fontWeight: 500, padding: "12px 16px", fontFamily: "Inter", fontSize: 13.5 }}>{o.productName || "---"}</td>
+                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, padding: "12px 16px" }}>
                   {o.productSku || "---"}
                 </td>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600 }}>{o.qty}</td>
-                <td><Badge status={o.status} /></td>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, whiteSpace: "nowrap" }}>
+                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, padding: "12px 16px" }}>{o.qty}</td>
+                <td style={{ padding: "12px 16px" }}><Badge status={o.status} /></td>
+                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, whiteSpace: "nowrap", padding: "12px 16px" }}>
                   {o.status === "received" ? (
                     <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <CheckCircle size={13} color={COLORS.teal} />
@@ -206,6 +212,7 @@ export default function OrderHistory() {
                     <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Clock size={13} color={COLORS.amber} />
                       <span style={{ color: COLORS.amber, fontWeight: 500 }}>Pending</span>
+                    </span>
                   ) : (
                     <span style={{ color: COLORS.sub }}>---</span>
                   )}
