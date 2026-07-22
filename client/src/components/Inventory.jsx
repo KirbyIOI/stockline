@@ -39,7 +39,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
         <table style={{ minWidth: 800 }}>
           <thead>
             <tr>
-              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 380 }}></th>
+              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 200 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -59,7 +59,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                   <td style={{ width: 160, minWidth: 140 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
                   <td style={{ whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub }}>
                         {p.price.toLocaleString()}
                       </span>
@@ -68,7 +68,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                         onClick={() => onRecordSale(p)}
                         style={{
                           ...iconBtnStyle, background: "#E8F5E9", color: "#2E7D32",
-                          fontWeight: 600, fontSize: 11.5, padding: "6px 10px",
+                          fontWeight: 600, fontSize: 11.5, padding: "8px 14px",
                           borderRadius: 8, display: "inline-flex", alignItems: "center",
                           gap: 5, border: "1px solid #C8E6C9", whiteSpace: "nowrap",
                         }}
