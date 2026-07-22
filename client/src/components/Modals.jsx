@@ -75,7 +75,7 @@ export function SaleModal({ product, onClose, onRecord }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Record this week\"s sales</h3>
+          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Record this week's sales</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>

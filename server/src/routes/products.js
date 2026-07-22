@@ -32,6 +32,27 @@ function getWeekly(productId, limit = 14) {
   return rows.map((r) => r.units);
 }
 
+// GET /api/sales-history — all recorded sales joined with product info
+router.get("/sales-history", (req, res) => {
+  const rows = db.prepare(`
+    SELECT ws.id, ws.product_id, ws.units, ws.recorded_at,
+           p.name AS product_name, p.sku AS product_sku, p.price AS unit_price
+    FROM weekly_sales ws
+    JOIN products p ON p.id = ws.product_id
+    ORDER BY ws.recorded_at DESC
+  `).all();
+  const result = rows.map((r) => ({
+    id: r.id,
+    productName: r.product_name,
+    productSku: r.product_sku,
+    units: r.units,
+    unitPrice: r.unit_price,
+    totalValue: r.units * r.unit_price,
+    recordedAt: r.recorded_at,
+  }));
+  res.json(result);
+});
+
 // GET /api/products — list every product with computed forecasting/inventory metrics
 router.get("/", (req, res) => {
   const rows = db.prepare("SELECT * FROM products ORDER BY created_at ASC").all();

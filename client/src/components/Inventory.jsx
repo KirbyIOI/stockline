@@ -58,11 +58,11 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub, whiteSpace: "nowrap" }}>{m.reorderPoint}</td>
                   <td style={{ width: 160, minWidth: 140 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
-                  <td style={{ fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap", color: COLORS.sub }}>
-                    {p.price.toLocaleString()}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 16, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub }}>
+                        {p.price.toLocaleString()}
+                      </span>
                       <button
                         title="Record sale"
                         onClick={() => onRecordSale(p)}
@@ -75,6 +75,10 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                       >
                         <ShoppingCart size={13} /> Record sale
                       </button>
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
                       <button
                         title="Edit product"
                         onClick={() => onEdit(p)}
