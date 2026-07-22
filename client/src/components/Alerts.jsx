@@ -19,17 +19,17 @@ const SORTS = [
   { id: "name", label: "Name (A–Z)" },
 ];
 
-export default function Alerts({ products, needsAttention, metrics, orders, onSelectProduct, onPlaceOrder, onCancelOrder, onReceive }) {
+export default function Alerts({ products, needsAttention, metrics, orders, onSelectProduct, onPlaceOrder, onCancelOrder, onReceive, alertOrdered = {}, onAlertMarkOrdered, onAlertReceive, onAlertCancel }) {
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("urgency");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState({});
   const [poOpen, setPoOpen] = useState(false);
 
-  const orderedIds = Object.keys(orders);
+  const orderedIds = [...new Set([...Object.keys(orders), ...Object.keys(alertOrdered)])];
   const pool = filter === "ordered"
     ? products.filter((p) => orderedIds.includes(p.id))
-    : needsAttention.filter((p) => filter === "all" || metrics[p.id].status === filter);
+    : (filter === "all" ? needsAttention : needsAttention.filter((p) => metrics[p.id].status === filter));
 
   const visible = pool
     .filter((p) => p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
@@ -144,9 +144,9 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={() => onSelectProduct(p.id)}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontFamily: "Inter", fontWeight: 600, fontSize: 14, color: COLORS.ink }}>{p.name}</span>
-                      {order && (
+                      {(order || alertOrdered[p.id]) && (
                         <span style={{ fontFamily: "Inter", fontSize: 10.5, fontWeight: 600, color: COLORS.teal, background: COLORS.tealSoft, padding: "2px 8px", borderRadius: 20 }}>
-                          On order · {order.qty} units
+                          On order · {order ? order.qty + ' units' : 'Awaiting'}
                         </span>
                       )}
                     </div>
@@ -164,13 +164,13 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {order ? (
+                    {(order || alertOrdered[p.id]) ? (
                       <>
-                        <button onClick={() => onReceive(p)} style={secondaryBtnStyle}>Receive</button>
-                        <button onClick={() => onCancelOrder(order.orderId)} style={iconBtnStyle} title="Cancel order"><X size={16} /></button>
+                        <button onClick={() => order ? onReceive(p) : onAlertReceive(p.id)} style={secondaryBtnStyle}>Receive</button>
+                        <button onClick={() => order ? onCancelOrder(order.orderId) : onAlertCancel(p.id)} style={{...iconBtnStyle, color: COLORS.rose}} title={order ? 'Cancel order' : 'Cancel alert order'}><X size={16} /></button>
                       </>
                     ) : (
-                      <button onClick={() => onPlaceOrder(p.id, m.suggestedOrder)} style={secondaryBtnStyle}>Mark ordered</button>
+                      <button onClick={() => onAlertMarkOrdered ? onAlertMarkOrdered(p.id) : onPlaceOrder(p.id, m.suggestedOrder)} style={secondaryBtnStyle}>Mark ordered</button>
                     )}
                     <button onClick={() => onSelectProduct(p.id)} style={iconBtnStyle}><ChevronRight size={18} color={COLORS.sub} /></button>
                   </div>
