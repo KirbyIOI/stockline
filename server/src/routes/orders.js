@@ -28,7 +28,7 @@ router.get("/", (req, res) => {
        FROM orders o JOIN products p ON p.id = o.product_id
        ORDER BY o.placed_at DESC`;
   const rows = (status ? db.prepare(sql).all(status) : db.prepare(sql).all());
-  res.json(rows.map(row => ({ ...toOrderShape(row), productName: row.productName, productSku: row.productSku })));
+  res.json(rows.map(toOrderShape));
 });
 
 // POST /api/orders — place a purchase order for a product { productId, qty }
