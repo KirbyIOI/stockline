@@ -40,6 +40,7 @@ db.exec(`
     product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     qty INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'open',
+    supplier_name TEXT NOT NULL DEFAULT '',
     placed_at TEXT NOT NULL DEFAULT (datetime('now')),
     received_at TEXT
   );
@@ -63,6 +64,18 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+
+try {
+  db.exec("ALTER TABLE orders ADD COLUMN supplier_name TEXT NOT NULL DEFAULT '';");
+} catch {
+  // Column already exists — this is fine.
+}
+try {
+  db.exec("ALTER TABLE orders ADD COLUMN order_source TEXT NOT NULL DEFAULT 'alert';");
+} catch {
+  // Column already exists — this is fine.
+}
 
 export function isEmpty() {
   const row = db.prepare("SELECT COUNT(*) AS n FROM products").get();

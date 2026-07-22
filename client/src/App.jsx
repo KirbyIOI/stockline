@@ -47,6 +47,7 @@ export default function App() {
   const [summary, setSummary] = useState(null);
   const [orders, setOrders] = useState({}); // productId -> { orderId, qty, placedOn }
   const [alertOrdered, setAlertOrdered] = useState({}); // productId -> { ordered: true }
+  const [alertOrdered, setAlertOrdered] = useState({}); // productId -> { ordered: true }
   const [view, setView] = useState("dashboard");
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(null);
@@ -341,6 +342,9 @@ export default function App() {
             onSelectProduct={(id) => { setSelectedId(id); setView("forecast"); }}
             onPlaceOrder={placeOrder} onCancelOrder={cancelOrder}
             onReceive={(p) => setReceiveFor(p)}
+            alertOrdered={alertOrdered} onAlertMarkOrdered={(id) => setAlertOrdered((a) => ({ ...a, [id]: { ordered: true } }))}
+            onAlertReceive={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
+            onAlertCancel={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
             alertOrdered={alertOrdered} onAlertMarkOrdered={(id) => setAlertOrdered((a) => ({ ...a, [id]: { ordered: true } }))}
             onAlertReceive={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
             onAlertCancel={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
