@@ -1,0 +1,17 @@
+print('=== db.js check ===')
+c = open('server/src/db.js','r').read()
+print('order_source migration:', 'order_source' in c)
+
+print()
+print('=== orders.js check ===')
+c = open('server/src/routes/orders.js','r').read()
+print('source field in shape:', 'source: row.order_source' in c)
+print('manual on INSERT:', "'manual'" in c and 'order_source' in c)
+
+print()
+print('=== OrderHistory.jsx check ===')
+c = open('client/src/components/OrderHistory.jsx','r').read()
+print('Manual PO badge:', 'Manual PO' in c)
+print('Alert badge:', "'Alert'" in c)
+print('Exclusive receive:', 'source === "manual"' in c)
+print('Alert note:', 'confirm in Alerts' in c)
