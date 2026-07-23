@@ -233,6 +233,7 @@ export default function OrderHistory() {
             </button>
           ))}
         </div>
+      </div>
 
       <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 14, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
