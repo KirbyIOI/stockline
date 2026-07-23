@@ -341,7 +341,13 @@ export default function App() {
             onSelectProduct={(id) => { setSelectedId(id); setView("forecast"); }}
             onPlaceOrder={placeOrder} onCancelOrder={cancelOrder}
             onReceive={(p) => setReceiveFor(p)}
-            alertOrdered={alertOrdered} onAlertMarkOrdered={(id) => setAlertOrdered((a) => ({ ...a, [id]: { ordered: true } }))}
+            alertOrdered={alertOrdered}
+            onAlertMarkOrdered={async (id) => {
+              const product = products.find(p => p.id === id);
+              if (product) {
+                await placeOrder(id, product.metrics?.suggestedOrder || Math.max(1, product.safetyStock || 1));
+              }
+            }}
             onAlertReceive={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
             onAlertCancel={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}
           />
