@@ -79,7 +79,7 @@ function CreateOrderModal({ products, onClose, onCreate }) {
             Place order
           </button>
         </div>
-</div>
+      </div>
     </div>
   )
 }
@@ -104,6 +104,7 @@ function ReceiveModal({ order, onClose, onReceive }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onReceive(order.id, units)} style={primaryBtnStyle}>Add to stock</button>
         </div>
+      </div>
     </div>
   )
 }
@@ -208,7 +209,6 @@ export default function OrderHistory() {
         <div style={{ background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 12, padding: "14px 18px", flex: 1, minWidth: 120 }}>
           <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginBottom: 4 }}>Cancelled</div>
           <div style={{ fontFamily: "'Space Grotesk',sans-serif", fontSize: 22, fontWeight: 700, color: COLORS.rose }}>{orders.filter((o) => o.status === "cancelled").length}</div>
-      </div>
       </div>
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
