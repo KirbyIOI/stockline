@@ -336,7 +336,13 @@ export default function App() {
             onEdit={(p) => { setFormError(null); setEditing(p); }}
             onDelete={deleteProduct}
             onRecordSale={(p) => setSaleFor(p)}
-            onSelectProduct={(id) => { setSelectedId(id); setView("forecast"); }}
+            onSelectProduct={(id) => {
+              // Guard: only navigate if the product still exists in current list
+              if (products.some(p => p.id === id)) {
+                setSelectedId(id);
+                setView("forecast");
+              }
+            }}
           />
         )}
         {view === "forecast" && (
