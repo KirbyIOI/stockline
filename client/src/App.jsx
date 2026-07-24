@@ -103,7 +103,7 @@ export default function App() {
   useEffect(() => {
     if (!authed || !selectedId) return;
     let cancelled = false;
-    api.getProduct(selectedId).then((d) => { if (!cancelled) setSelectedDetail(d); }).catch((e) => setError(e.message));
+    api.getProduct(selectedId).then((d) => { if (!cancelled) setSelectedDetail(d); }).catch(() => {});
     return () => { cancelled = true; };
   }, [authed, selectedId, products]);
 
@@ -319,7 +319,14 @@ export default function App() {
         {view === "dashboard" && (
           <Dashboard
             products={products} metrics={metrics} summary={summary} needsAttention={needsAttention}
-            onSelectProduct={(id) => { setSelectedId(id); setView("forecast"); }}
+            onSelectProduct={(id) => {
+              // Guard: only navigate if the product still exists in the current list
+              // (prevents "Product not found" toast when product was deleted or DB was reseeded)
+              if (products.some(p => p.id === id)) {
+                setSelectedId(id);
+                setView("forecast");
+              }
+            }}
           />
         )}
         {view === "inventory" && (
