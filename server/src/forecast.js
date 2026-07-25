@@ -13,9 +13,9 @@
 //               Adds a repeating seasonal pattern on top of the trend (e.g.
 //               a monthly cycle if seasonLength=4). Needs at least two full
 //               cycles of history — falls back to "smoothed" until then.
-//  - "ml"       Neural network (brain.js) trained per-product on its weekly
-//               sales history. Learns non-linear patterns. Falls back to
-//               "linear" if insufficient training data (< 5 weeks of history).
+//  - "ml"       Neural network trained per-product on its weekly sales
+//               history. Learns non-linear patterns. Falls back to "linear"
+//               if insufficient training data (< 5 weeks of history).
 
 import { mlForecast, trainProduct, saveModels } from "./mlForecast.js";
 
@@ -131,14 +131,13 @@ export function seasonalForecast(weekly, horizon = HORIZON, seasonLength = 4, al
 }
 
 /**
- * ML (neural network) forecast using brain.js.
+ * ML (neural network) forecast.
  * Trains a small feedforward network per product on its weekly sales history.
  * Learns non-linear patterns that math models miss.
  */
 export function mlForecastWrapper(weekly, horizon = HORIZON, productId = "default") {
   const n = weekly.length;
   if (n < 5) {
-    // Not enough data for useful ML training — fall back to linear
     return { ...linearForecast(weekly, horizon), method: "linear (fallback: <5 weeks for ML)" };
   }
   return mlForecast(weekly, horizon, productId);
@@ -168,7 +167,6 @@ export function productMetrics(product, weekly, options = {}) {
   const result = computeForecast(weekly, HORIZON, method, seasonLength, productId);
   const { slope, forecast, rmse } = result;
 
-  // Determine the method label shown in UI
   let usedMethod = method;
   if (method === "seasonal" && weekly.length < seasonLength * 2) {
     usedMethod = "smoothed (not enough history for seasonal)";
@@ -194,8 +192,6 @@ export function productMetrics(product, weekly, options = {}) {
   };
 }
 
-// Auto-train ML models on all products when this module is loaded
-// (triggered lazily — only when "ml" method is selected)
 let mlTrainingQueued = false;
 
 /**
@@ -206,7 +202,6 @@ export function trainAllProducts(getAllProductsCallback) {
   if (mlTrainingQueued) return;
   mlTrainingQueued = true;
 
-  // Use setImmediate to avoid blocking server startup
   setImmediate(() => {
     try {
       const products = getAllProductsCallback();
@@ -220,7 +215,7 @@ export function trainAllProducts(getAllProductsCallback) {
       }
       saveModels();
       console.log(`ML: trained ${trained}/${products.length} product models.`);
-} catch (err) {
+    } catch (err) {
       console.error("ML batch training error:", err.message);
     }
     mlTrainingQueued = false;
