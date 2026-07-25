@@ -17,13 +17,14 @@ class GeminiRateLimiter {
     this.activeCount = 0;
     this.requestTimestamps = [];
 
-    // Free tier safety limits
-    this.MAX_RPM = options.maxRpm || 10;
+    // Free tier safety limits — tuned for Gemini 2.0 Flash free tier (10 RPM ceiling)
+    // MAX_RPM=6 leaves headroom so we stay under Google's limit with room for retries.
+    this.MAX_RPM = options.maxRpm || 6;
     this.WINDOW_MS = options.windowMs || 60 * 1000;
     this.MAX_CONCURRENCY = options.maxConcurrency || 1;
-    this.MAX_RETRIES = options.maxRetries || 2;
+    this.MAX_RETRIES = options.maxRetries || 3;
     this.BASE_DELAY = options.baseDelay || 2000;
-    this.MIN_INTERVAL = options.minInterval || 4500;
+    this.MIN_INTERVAL = options.minInterval || 10000;
   }
 
   /** Enqueue a Gemini API call, resolving with the result after throttling + retry. */

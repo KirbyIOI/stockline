@@ -19,7 +19,7 @@ export function setUnauthorizedHandler(fn) {
 }
 
 async function request(path, options = {}, { auth: needsAuth = true } = {}) {
-  const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000;
 
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (needsAuth) {
