@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { requireAdmin } from "../auth.js";
 import { getSettings, updateSettings } from "../settings.js";
+import { trainAllProducts } from "../forecast.js";
+import { db } from "../db.js";
 
 export const router = Router();
 
@@ -15,8 +17,8 @@ router.put("/", requireAdmin, (req, res) => {
   const { companyName, currencySymbol, forecastMethod, seasonLength } = req.body || {};
 
   const errors = [];
-  if (forecastMethod !== undefined && !["linear", "smoothed", "seasonal"].includes(forecastMethod)) {
-    errors.push("forecastMethod must be linear, smoothed, or seasonal");
+  if (forecastMethod !== undefined && !["linear", "smoothed", "seasonal", "ml"].includes(forecastMethod)) {
+    errors.push("forecastMethod must be linear, smoothed, seasonal, or ml");
   }
   let season;
   if (seasonLength !== undefined) {
@@ -39,5 +41,17 @@ router.put("/", requireAdmin, (req, res) => {
     forecastMethod,
     seasonLength: season,
   });
+
+  // If switching to "ml", pre-train models on all products so predictions are ready immediately
+  if (forecastMethod === "ml") {
+    trainAllProducts(() => {
+      const rows = db.prepare("SELECT * FROM products").all();
+      return rows.map((r) => ({
+        id: r.id,
+        weekly: db.prepare("SELECT units FROM weekly_sales WHERE product_id = ? ORDER BY week_index ASC").all(r.id).map((w) => w.units),
+      }));
+    });
+  }
+
   res.json(updated);
 });

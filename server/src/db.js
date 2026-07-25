@@ -40,9 +40,9 @@ db.exec(`
     product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     qty INTEGER NOT NULL,
     status TEXT NOT NULL DEFAULT 'open',
-    supplier_name TEXT NOT NULL DEFAULT '',
     placed_at TEXT NOT NULL DEFAULT (datetime('now')),
-    received_at TEXT
+    received_at TEXT,
+    supplier_name TEXT NOT NULL DEFAULT ''
   );
 
   CREATE INDEX IF NOT EXISTS idx_orders_product ON orders(product_id, status);

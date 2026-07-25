@@ -8,6 +8,7 @@ const FORECAST_METHODS = [
   { id: "linear", label: "Linear trend", blurb: "Steady, stable projection over your whole sales history. Good default, especially with under ~6 weeks of data." },
   { id: "smoothed", label: "Smoothed (Holt's method)", blurb: "Weights recent weeks more heavily, so it reacts faster to a real change in sell-through. Best once you have 6+ weeks of history." },
   { id: "seasonal", label: "Seasonal (Holt-Winters)", blurb: "Adds a repeating cycle on top of the trend, e.g. a monthly pattern. Needs at least two full cycles of history, or it quietly falls back to Smoothed." },
+  { id: "ml", label: "ML Neural Network", blurb: "A small neural network trained per-product on your sales history. Learns non-linear patterns that math models miss. Needs at least 5 weeks of data per product." },
 ];
 
 function Card({ title, subtitle, children }) {

@@ -142,6 +142,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
           <button onClick={() => onReceive(Number(units))} style={primaryBtnStyle}>Add to stock</button>
         </div>
+      </div>
     </div>
   );
 }

@@ -1,8 +1,7 @@
-// Sales forecasting: three selectable models, all producing the same shape
-// ({ forecast: [{value, low, high}], rmse, slope }) so the rest of the app
-// doesn't need to know which one is active. The active method is a global
-// setting (see settings.js) rather than per-product, to keep this usable by
-// a small shop without needing to understand forecasting theory per SKU.
+// Sales forecasting: three selectable models + one ML model, all producing
+// the same shape ({ forecast: [{value, low, high}], rmse, slope }) so the
+// rest of the app doesn't need to know which one is active. The active
+// method is a global setting (see settings.js) rather than per-product.
 //
 //  - "linear"   Ordinary least-squares regression over the whole history.
 //               Simple and stable, but slow to react to a recent change in
@@ -14,6 +13,11 @@
 //               Adds a repeating seasonal pattern on top of the trend (e.g.
 //               a monthly cycle if seasonLength=4). Needs at least two full
 //               cycles of history — falls back to "smoothed" until then.
+//  - "ml"       Neural network (brain.js) trained per-product on its weekly
+//               sales history. Learns non-linear patterns. Falls back to
+//               "linear" if insufficient training data (< 5 weeks of history).
+
+import { mlForecast, trainProduct, saveModels } from "./mlForecast.js";
 
 const HORIZON = 6;
 
@@ -91,8 +95,6 @@ export function smoothedForecast(weekly, horizon = HORIZON, alpha = 0.4, beta = 
 export function seasonalForecast(weekly, horizon = HORIZON, seasonLength = 4, alpha = 0.3, beta = 0.2, gamma = 0.3) {
   const n = weekly.length;
   if (seasonLength < 2 || n < seasonLength * 2) {
-    // Not enough history for even two full cycles — a seasonal index would
-    // just be fitting noise, so fall back to the trend-only model.
     return smoothedForecast(weekly, horizon, alpha, beta);
   }
 
@@ -128,30 +130,53 @@ export function seasonalForecast(weekly, horizon = HORIZON, seasonLength = 4, al
   return { forecast: clampForecast(raw, rmse), rmse, slope: trend };
 }
 
-export function computeForecast(weekly, horizon, method, seasonLength) {
+/**
+ * ML (neural network) forecast using brain.js.
+ * Trains a small feedforward network per product on its weekly sales history.
+ * Learns non-linear patterns that math models miss.
+ */
+export function mlForecastWrapper(weekly, horizon = HORIZON, productId = "default") {
+  const n = weekly.length;
+  if (n < 5) {
+    // Not enough data for useful ML training — fall back to linear
+    return { ...linearForecast(weekly, horizon), method: "linear (fallback: <5 weeks for ML)" };
+  }
+  return mlForecast(weekly, horizon, productId);
+}
+
+export function computeForecast(weekly, horizon, method, seasonLength, productId) {
   if (method === "seasonal") return seasonalForecast(weekly, horizon, seasonLength);
   if (method === "smoothed") return smoothedForecast(weekly, horizon);
+  if (method === "ml") return mlForecastWrapper(weekly, horizon, productId);
   return linearForecast(weekly, horizon);
 }
 
 /**
- * @param {object} product - { stock, leadTimeDays, safetyStock, unitCost }
+ * @param {object} product - { id, stock, leadTimeDays, safetyStock, unitCost }
  * @param {number[]} weekly - chronological weekly units-sold history
- * @param {object} [options] - { method: 'linear'|'smoothed'|'seasonal', seasonLength: number }
+ * @param {object} [options] - { method: 'linear'|'smoothed'|'seasonal'|'ml', seasonLength: number }
  */
 export function productMetrics(product, weekly, options = {}) {
   const method = options.method || "linear";
   const seasonLength = options.seasonLength || 4;
+  const productId = product.id || "default";
 
   const recent = weekly.slice(-4);
   const avgWeekly = recent.length ? recent.reduce((a, b) => a + b, 0) / recent.length : 0;
   const avgDaily = avgWeekly / 7;
 
-  // Actual method used can differ from the requested one (e.g. "seasonal"
-  // falls back to "smoothed" without enough history) — surfaced so the UI
-  // can be honest about what's driving the numbers.
-  const usedMethod = method === "seasonal" && weekly.length < seasonLength * 2 ? "smoothed (not enough history for seasonal)" : method;
-  const { slope, forecast, rmse } = computeForecast(weekly, HORIZON, method, seasonLength);
+  const result = computeForecast(weekly, HORIZON, method, seasonLength, productId);
+  const { slope, forecast, rmse } = result;
+
+  // Determine the method label shown in UI
+  let usedMethod = method;
+  if (method === "seasonal" && weekly.length < seasonLength * 2) {
+    usedMethod = "smoothed (not enough history for seasonal)";
+  } else if (method === "ml" && weekly.length < 5) {
+    usedMethod = "linear (fallback: <5 weeks for ML)";
+  } else if (method === "ml" && forecast.every((f) => f.value === 0)) {
+    usedMethod = "linear (fallback: ML training failed)";
+  }
 
   const reorderPoint = Math.round(avgDaily * product.leadTimeDays + product.safetyStock);
   const daysOfStock = avgDaily > 0 ? product.stock / avgDaily : Infinity;
@@ -168,3 +193,37 @@ export function productMetrics(product, weekly, options = {}) {
     reorderPoint, daysOfStock, demandNext6, suggestedOrder, status,
   };
 }
+
+// Auto-train ML models on all products when this module is loaded
+// (triggered lazily — only when "ml" method is selected)
+let mlTrainingQueued = false;
+
+/**
+ * Queue training of ML models for all products. Called from the server
+ * when settings change to "ml", so models are ready immediately.
+ */
+export function trainAllProducts(getAllProductsCallback) {
+  if (mlTrainingQueued) return;
+  mlTrainingQueued = true;
+
+  // Use setImmediate to avoid blocking server startup
+  setImmediate(() => {
+    try {
+      const products = getAllProductsCallback();
+      let trained = 0;
+      for (const p of products) {
+        const weekly = p.weekly || [];
+        if (weekly.length >= 5) {
+          trainProduct(p.id, weekly);
+          trained++;
+        }
+      }
+      saveModels();
+      console.log(`ML: trained ${trained}/${products.length} product models.`);
+    } catch (err) {
+      console.error("ML batch training error:", err.message);
+    }
+    mlTrainingQueued = false;
+  });
+}
+</create_file>
