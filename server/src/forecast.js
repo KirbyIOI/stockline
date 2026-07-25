@@ -220,10 +220,9 @@ export function trainAllProducts(getAllProductsCallback) {
       }
       saveModels();
       console.log(`ML: trained ${trained}/${products.length} product models.`);
-    } catch (err) {
+} catch (err) {
       console.error("ML batch training error:", err.message);
     }
     mlTrainingQueued = false;
   });
 }
-</create_file>
