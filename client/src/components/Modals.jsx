@@ -70,22 +70,51 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
 }
 
 export function SaleModal({ product, onClose, onRecord }) {
-  const [units, setUnits] = useState(0);
+  const [units, setUnits] = useState("");
+  const [saleError, setSaleError] = useState(null);
+  const canSubmit = units !== "" && Number(units) > 0;
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Record this week's sales</h3>
+          <h3 style={{ fontFamily: '\"Space Grotesk\", sans-serif', fontSize: 17, margin: 0 }}>Record this week's sales</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
+        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>
+          {product.name} &middot; {product.sku} &middot; <strong>{product.stock} in stock</strong>
+        </p>
+        {saleError && (
+          <div style={{ background: COLORS.roseSoft, color: COLORS.rose, borderRadius: 8, padding: "8px 12px", fontFamily: "Inter", fontSize: 12.5, marginBottom: 12 }}>
+            {saleError}
+          </div>
+        )}
         <label style={fieldLabelStyle}>
           Units sold this week
-          <input type="number" min={0} value={units} onChange={(e) => setUnits(Number(e.target.value))} style={inputStyle} />
+          <input
+            type="number" min={0} max={product.stock} value={units}
+            onChange={(e) => {
+              setSaleError(null);
+              setUnits(e.target.value === "" ? "" : Number(e.target.value));
+            }}
+            style={inputStyle}
+          />
         </label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={() => onRecord(units)} style={primaryBtnStyle}>Record and update stock</button>
+          <button
+            onClick={() => {
+              const qty = Number(units);
+              if (qty > product.stock) {
+                setSaleError("Cannot sell " + qty + " units \u2014 only " + product.stock + " in stock.");
+                return;
+              }
+              onRecord(qty);
+            }}
+            style={primaryBtnStyle}
+            disabled={!canSubmit}
+          >
+            Record and update stock
+          </button>
         </div>
       </div>
     </div>
@@ -93,24 +122,26 @@ export function SaleModal({ product, onClose, onRecord }) {
 }
 
 export function ReceiveModal({ product, suggested, onClose, onReceive }) {
-  const [units, setUnits] = useState(suggested || 0);
+  const [units, setUnits] = useState(suggested || "");
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
+          <h3 style={{ fontFamily: '\"Space Grotesk\", sans-serif', fontSize: 17, margin: 0 }}>Receive shipment</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
         <label style={fieldLabelStyle}>
           Units received
-          <input type="number" min={0} value={units} onChange={(e) => setUnits(Number(e.target.value))} style={inputStyle} />
+          <input type="number" min={0} value={units}
+            onChange={(e) => setUnits(e.target.value === "" ? "" : Number(e.target.value))}
+            style={inputStyle}
+          />
         </label>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={() => onReceive(units)} style={primaryBtnStyle}>Add to stock</button>
+          <button onClick={() => onReceive(Number(units))} style={primaryBtnStyle}>Add to stock</button>
         </div>
-      </div>
     </div>
   );
 }
