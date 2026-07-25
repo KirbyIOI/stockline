@@ -19,28 +19,43 @@ export function setUnauthorizedHandler(fn) {
 }
 
 async function request(path, options = {}, { auth: needsAuth = true } = {}) {
+  const TIMEOUT_MS = 30_000;
+
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (needsAuth) {
     const token = auth.getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(`${BASE}${path}`, { ...options, headers });
 
-  if (res.status === 401 && needsAuth) {
-    auth.clearToken();
-    onUnauthorized();
-  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  if (!res.ok) {
-    let message = `Request failed (${res.status})`;
-    try {
-      const body = await res.json();
-      if (body?.error) message = body.error;
-    } catch {}
-    throw new Error(message);
+  try {
+    const res = await fetch(`${BASE}${path}`, { ...options, headers, signal: controller.signal });
+
+    if (res.status === 401 && needsAuth) {
+      auth.clearToken();
+      onUnauthorized();
+    }
+
+    if (!res.ok) {
+      let message = `Request failed (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body?.error) message = body.error;
+      } catch {}
+      throw new Error(message);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out — the server took too long to respond. Please try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  if (res.status === 204) return null;
-  return res.json();
 }
 
 export const api = {

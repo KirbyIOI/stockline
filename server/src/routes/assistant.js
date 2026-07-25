@@ -21,7 +21,7 @@ class GeminiRateLimiter {
     this.MAX_RPM = options.maxRpm || 10;
     this.WINDOW_MS = options.windowMs || 60 * 1000;
     this.MAX_CONCURRENCY = options.maxConcurrency || 1;
-    this.MAX_RETRIES = options.maxRetries || 5;
+    this.MAX_RETRIES = options.maxRetries || 2;
     this.BASE_DELAY = options.baseDelay || 2000;
     this.MIN_INTERVAL = options.minInterval || 4500;
   }
@@ -77,16 +77,13 @@ class GeminiRateLimiter {
     }
   }
 
-  /** Extract a retry delay (ms) from Gemini 429 error payloads.
-   *  Handles RetryInfo {"retryDelay":"39s"}, "retry in 39s", and headers. */
+  /** Extract a retry delay (ms) from Gemini 429 error payloads. */
   _parseRetryDelay(error) {
-    // 1. Direct property on the error object
     if (error?.retryDelay) {
       const parsed = parseFloat(String(error.retryDelay).replace(/s/gi, ""));
       if (!isNaN(parsed) && parsed > 0) return parsed * 1000 + 500;
     }
 
-    // 2. HTTP retry-after header
     const retryAfter = error?.response?.headers?.["retry-after"] ||
                        error?.response?.headers?.["Retry-After"];
     if (retryAfter) {
@@ -94,16 +91,13 @@ class GeminiRateLimiter {
       if (!isNaN(parsed) && parsed > 0) return parsed * 1000;
     }
 
-    // 3. Deep search of full error text for Google RPC RetryInfo JSON payload
     const text = typeof error === "string" ? error :
                  error?.message || error?.toString?.() || JSON.stringify(error);
-    // "retryDelay":"39.34646009s"
     const retryInfoMatch = text.match(/"retryDelay"\s*:\s*"([\d.]+)s"/i);
     if (retryInfoMatch) {
       const seconds = parseFloat(retryInfoMatch[1]);
       if (!isNaN(seconds) && seconds > 0) return seconds * 1000 + 500;
     }
-    // "Please retry in 39.34646009s"
     const retryInMatch = text.match(/(?:retry|try\s*again)\s+in\s+([\d.]+)\s*s(?:econds?)?/i);
     if (retryInMatch) {
       const seconds = parseFloat(retryInMatch[1]);
@@ -119,7 +113,6 @@ class GeminiRateLimiter {
       try {
         return await fn();
       } catch (error) {
-        // Check full error text for 429/quota signals
         const errText = error?.message || error?.toString?.() || JSON.stringify(error);
         const status = error?.status || error?.response?.status;
         const isRetriable =
@@ -134,7 +127,6 @@ class GeminiRateLimiter {
 
         if (!isRetriable) throw error;
 
-        // Use server-recommended delay if available (RetryInfo), otherwise exponential backoff
         let delay = this._parseRetryDelay(error);
         if (delay === null) {
           delay = this.BASE_DELAY * Math.pow(2, attempt) + Math.random() * 1000;
@@ -234,8 +226,8 @@ function systemPrompt() {
 
 Rules:
 - Base numeric answers only on the data provided below; don't invent figures.
-- Keep answers short and practical — this is a busy shop owner, not an analyst. Prefer a few sentences or a short bullet list over long essays.
-- If asked to take an action (place an order, edit a product), explain that you can't directly change data yet, and tell them exactly which button/page to use in the app (Inventory, Alerts, or the Forecast page).
+- Keep answers short and practical — this is a busy shop owner, not an analyst.
+- If asked to take an action (place an order, edit a product), explain that you can't directly change data yet, and tell them exactly which button/page to use in the app.
 - If the data doesn't cover what's asked, say so plainly instead of guessing.
 
 Current business data:
@@ -269,7 +261,6 @@ router.post("/chat", chatLimiter, async (req, res) => {
       systemInstruction: systemContext,
     });
 
-    // Throttle + retry the API call through the rate limiter queue
     const result = await geminiLimiter.enqueue(async () => {
       return await model.generateContent({ contents });
     });
