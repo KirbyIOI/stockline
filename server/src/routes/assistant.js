@@ -263,16 +263,17 @@ router.post("/chat", chatLimiter, async (req, res) => {
     });
 
     // Enqueue API call through rate limiter — retries on 429 with backoff.
-    // Wrapped in a 30s AbortController timeout so the call doesn't hang
-    // forever if the Gemini API is unreachable or too slow from Render.
+    // Gemini SDK doesn't support AbortController.signal, so we use Promise.race
+    // with a 30s timeout so the call doesn't hang forever if the Gemini API is
+    // unreachable or too slow from Render.
     const result = await geminiLimiter.enqueue(async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30_000);
-      try {
-        return await model.generateContent({ contents, signal: controller.signal });
-      } finally {
-        clearTimeout(timeout);
-      }
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Gemini API call timed out after 30s")), 30_000)
+      );
+      return await Promise.race([
+        model.generateContent({ contents }),
+        timeoutPromise,
+      ]);
     });
 
     const text = result.response.text().trim();
