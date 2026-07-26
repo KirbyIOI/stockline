@@ -1,6 +1,6 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { db } from "../db.js";
 import { productMetrics } from "../forecast.js";
 import { money } from "../format.js";
@@ -157,7 +157,7 @@ export const router = Router();
 
 const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+const aiClient = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 const geminiLimiter = new GeminiRateLimiter();
 
@@ -170,7 +170,7 @@ const chatLimiter = rateLimit({
 });
 
 publicRouter.get("/status", (req, res) => {
-  res.json({ enabled: Boolean(genAI), model: MODEL });
+  res.json({ enabled: Boolean(aiClient), model: MODEL });
 });
 
 function buildBusinessContext() {
@@ -236,7 +236,7 @@ Current business data:
 }
 
 router.post("/chat", chatLimiter, async (req, res) => {
-  if (!genAI) {
+  if (!aiClient) {
     return res.status(503).json({ error: "AI assistant is not configured. Set GEMINI_API_KEY in your environment to enable it." });
   }
   const { message, history } = req.body || {};
@@ -257,26 +257,25 @@ router.post("/chat", chatLimiter, async (req, res) => {
 
   try {
     const systemContext = systemPrompt() + buildBusinessContext();
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction: systemContext,
-    });
 
     // Enqueue API call through rate limiter — retries on 429 with backoff.
-    // Gemini SDK doesn't support AbortController.signal, so we use Promise.race
-    // with a 30s timeout so the call doesn't hang forever if the Gemini API is
-    // unreachable or too slow from Render.
+    // Uses Promise.race with a 30s timeout so the call doesn't hang forever
+    // if the Gemini API is unreachable or too slow from Render.
     const result = await geminiLimiter.enqueue(async () => {
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error("Gemini API call timed out after 30s")), 30_000)
       );
       return await Promise.race([
-        model.generateContent({ contents }),
+        aiClient.models.generateContent({
+          model: MODEL,
+          contents,
+          config: { systemInstruction: systemContext },
+        }),
         timeoutPromise,
       ]);
     });
 
-    const text = result.response.text().trim();
+    const text = result.text?.trim() || result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
     res.json({ reply: text || "I wasn't able to generate a response — try rephrasing the question." });
   } catch (err) {
     console.error("Assistant error:", err?.message || err);
