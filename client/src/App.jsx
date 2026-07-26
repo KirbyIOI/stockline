@@ -348,10 +348,15 @@ export default function App() {
         {view === "forecast" && (
           <Forecast products={products} selected={selected} detail={selectedDetail} onSelect={setSelectedId} />
         )}
-        {view === "alerts" && (
+{view === "alerts" && (
           <Alerts
             products={products} needsAttention={needsAttention} metrics={metrics} orders={orders}
-            onSelectProduct={(id) => { setSelectedId(id); setView("forecast"); }}
+            onSelectProduct={(id) => {
+              if (products.some(p => p.id === id)) {
+                setSelectedId(id);
+                setView("forecast");
+              }
+            }}
             onPlaceOrder={placeOrder} onCancelOrder={cancelOrder}
             onReceive={(p) => setReceiveFor(p)}
             alertOrdered={alertOrdered}
