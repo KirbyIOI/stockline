@@ -155,7 +155,7 @@ class GeminiRateLimiter {
 export const publicRouter = Router();
 export const router = Router();
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 const apiKey = process.env.GEMINI_API_KEY;
 const aiClient = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
