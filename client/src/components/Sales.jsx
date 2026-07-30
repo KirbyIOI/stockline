@@ -107,8 +107,10 @@ export default function Sales({ products, onCreateSale }) {
               <span>Total</span>
               <span style={{ color: COLORS.primary }}>{money(saleResult.total)}</span>
             </div>
-          <button onClick={resetSale} style={primaryBtnStyle}>New sale</button>
+            <button onClick={resetSale} style={primaryBtnStyle}>New sale</button>
+          </div>
         </div>
+      </div>
     );
   }
 
@@ -163,6 +165,7 @@ export default function Sales({ products, onCreateSale }) {
               </tbody>
             </table>
           </div>
+        </div>
         <div style={{ width: 380, minWidth: 320, background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 14, display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 140px)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid " + COLORS.line, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, margin: 0, color: COLORS.ink, display: "flex", alignItems: "center", gap: 8 }}><ShoppingCart size={18} /> Cart</h3>
@@ -204,7 +207,7 @@ export default function Sales({ products, onCreateSale }) {
                 {submitting ? "Processing..." : <><CheckCircle size={18} /> Complete sale</>}
               </button>
             )}
-          </div>
       </div>
+        </div>
   );
 }
