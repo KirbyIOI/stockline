@@ -78,6 +78,7 @@ export const api = {
   cancelOrder: (id) => request(`/orders/${id}/cancel`, { method: "PATCH" }),
   receiveOrder: (id, units) => request(`/orders/${id}/receive`, { method: "PATCH", body: JSON.stringify({ units }) }),
 
+  createSales: (items) => request("/sales", { method: "POST", body: JSON.stringify({ items }) }),
   getDashboardSummary: () => request("/dashboard/summary"),
 
   getAssistantStatus: () => request("/assistant/status", {}, { auth: false }),

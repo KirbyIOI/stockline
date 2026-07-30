@@ -5,6 +5,7 @@ import { FONT_IMPORT, COLORS, setCurrencySymbol } from "./styles.js";
 import { ProductModal, SaleModal, ReceiveModal } from "./components/Modals.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Inventory from "./components/Inventory.jsx";
+import Sales from "./components/Sales.jsx";
 import Forecast from "./components/Forecast.jsx";
 import Alerts from "./components/Alerts.jsx";
 import Login from "./components/Login.jsx";
@@ -16,6 +17,7 @@ import AIAssistant from "./components/AIAssistant.jsx";
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "inventory", label: "Inventory", icon: Boxes },
+  { id: "sales", label: "Sales", icon: ShoppingCart },
   { id: "forecast", label: "Sales Forecast", icon: TrendingUp },
   { id: "sales-history", label: "Sales History", icon: ShoppingCart },
   { id: "order-history", label: "Purchase Orders", icon: Package },
@@ -335,7 +337,6 @@ export default function App() {
             onAdd={() => { setFormError(null); setEditing({}); }}
             onEdit={(p) => { setFormError(null); setEditing(p); }}
             onDelete={deleteProduct}
-            onRecordSale={(p) => setSaleFor(p)}
             onSelectProduct={(id) => {
               // Guard: only navigate if the product still exists in current list
               if (products.some(p => p.id === id)) {
@@ -344,6 +345,13 @@ export default function App() {
               }
             }}
           />
+        )}
+        {view === "sales" && (
+          <Sales products={products} onCreateSale={async (items) => {
+            const result = await api.createSales(items);
+            await Promise.all([refreshProducts(), refreshSummary()]);
+            return result;
+          }} />
         )}
         {view === "forecast" && (
           <Forecast products={products} selected={selected} detail={selectedDetail} onSelect={setSelectedId} />

@@ -1,10 +1,10 @@
 import React from "react";
-import { Plus, Search, TrendingUp, Pencil, Trash2, Download, ShoppingCart } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download } from "lucide-react";
 import { COLORS, primaryBtnStyle, secondaryBtnStyle, iconBtnStyle } from "../styles.js";
 import { SectionHeader, RunwayBar, StatusPill } from "./Shared.jsx";
 import { downloadCSV } from "../csv.js";
 
-export default function Inventory({ products, metrics, search, setSearch, onAdd, onEdit, onDelete, onRecordSale, onSelectProduct }) {
+export default function Inventory({ products, metrics, search, setSearch, onAdd, onEdit, onDelete, onSelectProduct }) {
   const exportCSV = () => {
     const header = ["Name", "SKU", "Category", "Stock", "Reorder point", "Days runway", "Status", "Unit cost", "Price"];
     const rows = products.map((p) => {
@@ -39,7 +39,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
         <table style={{ minWidth: 800 }}>
           <thead>
             <tr>
-              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 200 }}></th>
+              <th>Product</th><th>Category</th><th style={{ whiteSpace: "nowrap" }}>Stock</th><th style={{ whiteSpace: "nowrap" }}>Reorder pt.</th><th>Runway</th><th>Status</th><th style={{ whiteSpace: "nowrap" }}>Price</th><th style={{ minWidth: 100 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -51,7 +51,6 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     <div onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
-                    </div>
                   </td>
                   <td style={{ color: COLORS.sub }}>{p.category}</td>
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap" }}>{p.stock}</td>
@@ -59,23 +58,9 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                   <td style={{ width: 160, minWidth: 140 }}><RunwayBar p={p} m={m} /></td>
                   <td><StatusPill status={m.status} /></td>
                   <td style={{ whiteSpace: "nowrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub }}>
-                        {p.price.toLocaleString()}
-                      </span>
-                      <button
-                        title="Record sale"
-                        onClick={() => onRecordSale(p)}
-                        style={{
-                          ...iconBtnStyle, background: "#E8F5E9", color: "#2E7D32",
-                          fontWeight: 600, fontSize: 11.5, padding: "8px 14px",
-                          borderRadius: 8, display: "inline-flex", alignItems: "center",
-                          gap: 5, border: "1px solid #C8E6C9", whiteSpace: "nowrap",
-                        }}
-                      >
-                        <ShoppingCart size={13} /> Record sale
-                      </button>
-                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: COLORS.sub }}>
+                      {p.price.toLocaleString()}
+                    </span>
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
@@ -103,6 +88,5 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
           </tbody>
         </table>
       </div>
-    </div>
   );
 }
