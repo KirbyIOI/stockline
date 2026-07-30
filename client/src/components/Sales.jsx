@@ -107,10 +107,8 @@ export default function Sales({ products, onCreateSale }) {
               <span>Total</span>
               <span style={{ color: COLORS.primary }}>{money(saleResult.total)}</span>
             </div>
-            <button onClick={resetSale} style={primaryBtnStyle}>New sale</button>
-          </div>
+          <button onClick={resetSale} style={primaryBtnStyle}>New sale</button>
         </div>
-      </div>
     );
   }
 
@@ -165,7 +163,6 @@ export default function Sales({ products, onCreateSale }) {
               </tbody>
             </table>
           </div>
-        </div>
         <div style={{ width: 380, minWidth: 320, background: COLORS.panel, border: "1px solid " + COLORS.line, borderRadius: 14, display: "flex", flexDirection: "column", maxHeight: "calc(100vh - 140px)" }}>
           <div style={{ padding: "16px 20px", borderBottom: "1px solid " + COLORS.line, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, margin: 0, color: COLORS.ink, display: "flex", alignItems: "center", gap: 8 }}><ShoppingCart size={18} /> Cart</h3>
@@ -182,8 +179,7 @@ export default function Sales({ products, onCreateSale }) {
                 <div key={item.product.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid " + COLORS.line }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product.name}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{money(item.product.price)} each</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+<div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COL
                     <button onClick={() => updateQty(item.product.id, item.units - 1)} style={{ ...iconBtnStyle, width: 28, height: 28, border: "1px solid " + COLORS.line, borderRadius: 6 }}><Minus size={12} /></button>
                     <input type="number" min={1} max={item.product.stock} value={item.units} onChange={(e) => {
                       const val = e.target.value === "" ? "" : Number(e.target.value);
@@ -207,7 +203,10 @@ export default function Sales({ products, onCreateSale }) {
                 {submitting ? "Processing..." : <><CheckCircle size={18} /> Complete sale</>}
               </button>
             )}
+          </div>
       </div>
         </div>
+    </div>
+  </div>
   );
 }

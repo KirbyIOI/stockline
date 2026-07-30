@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { LayoutDashboard, Boxes, TrendingUp, AlertTriangle, LogOut, Menu, X, Settings as SettingsIcon, ShieldCheck, User as UserIcon, ShoppingCart, Package } from "lucide-react";
 import { api, auth, setUnauthorizedHandler } from "./api.js";
 import { FONT_IMPORT, COLORS, setCurrencySymbol } from "./styles.js";
-import { ProductModal, SaleModal, ReceiveModal } from "./components/Modals.jsx";
+import { ProductModal, ReceiveModal } from "./components/Modals.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Inventory from "./components/Inventory.jsx";
 import Sales from "./components/Sales.jsx";
@@ -51,8 +51,6 @@ export default function App() {
   const [alertOrdered, setAlertOrdered] = useState({}); // productId -> { ordered: true }
   const [view, setView] = useState("dashboard");
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState(null);
-  const [saleFor, setSaleFor] = useState(null);
   const [receiveFor, setReceiveFor] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
@@ -143,13 +141,6 @@ export default function App() {
     await api.deleteProduct(id);
     if (selectedId === id) setSelectedId(null);
     await refreshAll();
-  });
-
-  const recordSale = withErrorHandling(async (product, units) => {
-    await api.recordSale(product.id, units);
-    setSaleFor(null);
-    await Promise.all([refreshProducts(), refreshSummary()]);
-    if (selectedId === product.id) api.getProduct(product.id).then(setSelectedDetail);
   });
 
   const placeOrder = withErrorHandling(async (productId, qty) => {
@@ -387,9 +378,6 @@ export default function App() {
 
       {editing !== null && (
         <ProductModal initial={editing.id ? editing : null} onClose={() => { setEditing(null); setFormError(null); }} onSave={saveProduct} error={formError} />
-      )}
-      {saleFor && (
-        <SaleModal product={saleFor} onClose={() => setSaleFor(null)} onRecord={(units) => recordSale(saleFor, units)} />
       )}
       {receiveFor && (
         <ReceiveModal product={receiveFor} suggested={metrics[receiveFor.id]?.suggestedOrder}

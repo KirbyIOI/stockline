@@ -42,6 +42,7 @@ app.use("/api/assistant", requireAuth, assistantRouter);
 app.use("/api/products", requireAuth, productsRouter);
 app.use("/api/orders", requireAuth, ordersRouter);
 app.use("/api/dashboard", requireAuth, dashboardRouter);
+app.use("/api/sales", requireAuth, salesRouter);
 app.use("/api/sales-history", requireAuth, salesRouter);
 app.use("/api/settings", requireAuth, settingsRouter); // GET is for any user, PUT checks requireAdmin itself
 app.use("/api/users", requireAuth, requireAdmin, usersRouter); // whole router is admin-only
