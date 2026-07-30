@@ -51,6 +51,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     <div onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
                       <div style={{ fontWeight: 600 }}>{p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
+                      </div>
                   </td>
                   <td style={{ color: COLORS.sub }}>{p.category}</td>
                   <td style={{ fontFamily: "'IBM Plex Mono', monospace", whiteSpace: "nowrap" }}>{p.stock}</td>
@@ -88,5 +89,6 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
           </tbody>
         </table>
       </div>
+    </div>
   );
 }
