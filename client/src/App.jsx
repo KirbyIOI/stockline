@@ -57,7 +57,8 @@ export default function App() {
   const [error, setError] = useState(null);
   const [formError, setFormError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [navOpen, setNavOpen] = useState(false);
+const [navOpen, setNavOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
