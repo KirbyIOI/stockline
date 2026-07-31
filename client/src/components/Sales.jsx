@@ -107,8 +107,10 @@ export default function Sales({ products, onCreateSale }) {
               <span>Total</span>
               <span style={{ color: COLORS.primary }}>{money(saleResult.total)}</span>
             </div>
-          <button onClick={resetSale} style={primaryBtnStyle}>New sale</button>
-        </div>
+
+</div>
+  </div>
+    </div>
     );
   }
 
@@ -207,5 +209,6 @@ export default function Sales({ products, onCreateSale }) {
       </div>
         </div>
     </div>
+  </div>
   );
 }
