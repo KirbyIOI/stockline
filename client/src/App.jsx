@@ -97,7 +97,12 @@ const [navOpen, setNavOpen] = useState(false);
   useEffect(() => {
     if (!authed) return;
     setLoading(true);
-    refreshAll().catch((e) => setError(e.message)).finally(() => setLoading(false));
+    refreshAll().catch((e) => {
+      // A stale/expired session is normal (e.g. after Render restarts and
+      // reseeds the DB, or after the 12h token TTL) — silently drop to the
+      // login screen instead of flashing an error toast on every load.
+      if (!e.isAuthError) setError(e.message);
+    }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authed]);
 

@@ -44,7 +44,11 @@ const TIMEOUT_MS = 60_000;
         const body = await res.json();
         if (body?.error) message = body.error;
       } catch {}
-      throw new Error(message);
+      const err = new Error(message);
+      // Mark auth failures so callers can treat them as "please sign in"
+      // rather than showing a scary error toast.
+      if (res.status === 401) err.isAuthError = true;
+      throw err;
     }
     if (res.status === 204) return null;
     return res.json();
