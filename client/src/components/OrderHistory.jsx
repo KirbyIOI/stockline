@@ -32,17 +32,41 @@ function Badge({ status }) {
   )
 }
 
-function CreateOrderModal({ products, onClose, onCreate }) {
+const OTHER_SUPPLIER = "__other__";
+
+function CreateOrderModal({ products, knownSuppliers = [], onClose, onCreate }) {
   const firstId = products.length > 0 ? products[0].id : ""
   const [productId, setProductId] = useState(firstId)
   const sel = products.find((p) => p.id === productId)
   const [qty, setQty] = useState(sel ? Math.max(1, sel.safetyStock) : 1)
-  const [supplierName, setSupplierName] = useState("")
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customValue, setCustomValue] = useState("")
+  const [selectedSupplier, setSelectedSupplier] = useState("")
 
   const handleProductChange = (id) => {
     setProductId(id)
     const p = products.find((x) => x.id === id)
     if (p) setQty(Math.max(1, p.safetyStock))
+  }
+
+  const selectValue = customOpen
+    ? OTHER_SUPPLIER
+    : selectedSupplier || ""
+
+  const handleSupplierSelect = (e) => {
+    const val = e.target.value
+    if (val === OTHER_SUPPLIER) {
+      setCustomOpen(true)
+    } else {
+      setCustomOpen(false)
+      setSelectedSupplier(val)
+      setCustomValue("")
+    }
+  }
+
+  const getFinalSupplier = () => {
+    if (customOpen) return customValue.trim()
+    return selectedSupplier
   }
 
   return (
@@ -61,9 +85,31 @@ function CreateOrderModal({ products, onClose, onCreate }) {
           </select>
         </label>
         <label style={{ ...fieldLabelStyle, marginBottom: 14 }}>
-          Supplier Name
-          <input type="text" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="e.g. TZ Wholesale Ltd" style={inputStyle} />
+          Supplier
+          <select
+            value={selectValue}
+            onChange={handleSupplierSelect}
+            style={{ ...inputStyle, cursor: "pointer" }}
+          >
+            <option value="" disabled>Select a supplier…</option>
+            {knownSuppliers.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+            <option value={OTHER_SUPPLIER}>Other… (enter a new supplier)</option>
+          </select>
         </label>
+        {customOpen && (
+          <label style={{ ...fieldLabelStyle, marginBottom: 14 }}>
+            New supplier name
+            <input
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value)}
+              style={inputStyle}
+              placeholder="e.g. TZ Wholesale Ltd"
+              autoFocus
+            />
+          </label>
+        )}
         <label style={{ ...fieldLabelStyle, marginBottom: 20 }}>
           Quantity (defaults to safety stock)
           <input type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value)))} style={inputStyle} />
@@ -75,7 +121,7 @@ function CreateOrderModal({ products, onClose, onCreate }) {
         )}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={() => onCreate(productId, qty, supplierName)} style={primaryBtnStyle} disabled={!productId}>
+          <button onClick={() => onCreate(productId, qty, getFinalSupplier())} style={primaryBtnStyle} disabled={!productId || !getFinalSupplier()}>
             Place order
           </button>
         </div>
@@ -118,12 +164,14 @@ export default function OrderHistory() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [receiveFor, setReceiveFor] = useState(null)
   const [products, setProducts] = useState([])
+  const [knownSuppliers, setKnownSuppliers] = useState([])
 
   const load = () => {
     setLoading(true)
     Promise.all([
       api.getOrders().then(setOrders),
       api.getProducts().then(setProducts),
+      api.getSuppliers().then(setKnownSuppliers),
     ]).catch((e) => setError(e.message)).finally(() => setLoading(false))
   }
 
@@ -323,9 +371,10 @@ export default function OrderHistory() {
         </div>
       )}
 
-      {showCreateModal && (
+{showCreateModal && (
         <CreateOrderModal
           products={products}
+          knownSuppliers={knownSuppliers}
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreate}
         />

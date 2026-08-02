@@ -27,6 +27,12 @@ function toOrderShape(row) {
   };
 }
 
+// GET /api/orders/suppliers — list distinct supplier names known from past orders
+router.get("/suppliers", (req, res) => {
+  const rows = db.prepare("SELECT DISTINCT supplier_name FROM orders WHERE supplier_name != '' ORDER BY supplier_name ASC").all();
+  res.json(rows.map((r) => r.supplier_name));
+});
+
 // GET /api/orders?status=open — list purchase orders, optionally filtered by status
 router.get("/", (req, res) => {
   const { status } = req.query;
