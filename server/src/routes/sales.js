@@ -1,7 +1,14 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, withTransaction } from "../db.js";
-import { displayName } from "./products.js";
+import { productMetrics, calculateSafetyStock } from "../forecast.js";
+import { getSettings } from "../settings.js";
+import { displayName, recalcSafetyStock } from "./products.js";
+
+function forecastOptions() {
+  const s = getSettings();
+  return { method: s.forecastMethod, seasonLength: s.seasonLength };
+}
 
 export const router = Router();
 
@@ -73,6 +80,11 @@ router.post("/", (req, res) => {
       });
     }
   });
+
+  // Recalculate safety stock for each product after the sale
+  for (const { product } of validated) {
+    recalcSafetyStock(product.id);
+  }
 
   const grandTotal = receiptItems.reduce((sum, i) => sum + i.subtotal, 0);
 

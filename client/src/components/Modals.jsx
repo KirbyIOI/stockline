@@ -40,7 +40,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
     initialCategory !== "" && !FIXED_CATEGORIES.includes(initialCategory);
 
   const [form, setForm] = useState(initial || {
-    name: "", sku: "", category: "", stock: 0, unitCost: 0, price: 0, leadTimeDays: 14, safetyStock: 10,
+    name: "", sku: "", category: "", stock: 0, unitCost: 0, price: 0, leadTimeDays: 14, safetyStock: 10, safetyStockAuto: true,
     qtyPerUnit: 0, qtyUnitLabel: "",
   });
   const [customOpen, setCustomOpen] = useState(isCustomInitial);
@@ -171,7 +171,43 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
           {numField("unitCost", "Unit cost", 500)}
           {numField("price", "Sale price", 500)}
           {numField("leadTimeDays", "Supplier lead time (days)")}
-          {numField("safetyStock", "Safety stock (units)")}
+
+          <label style={fieldLabelStyle}>
+            Safety stock (units)
+            <input
+              type="number" step={1} value={form.safetyStock}
+              onChange={(e) => {
+                const val = e.target.value === "" ? "" : Number(e.target.value);
+                set("safetyStock", val);
+                // Typing in the field manually counts as a manual override
+                if (initial?.safetyStockAuto) set("safetyStockAuto", false);
+              }}
+              style={inputStyle}
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+              <span style={{
+                fontFamily: "Inter", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20,
+                color: form.safetyStockAuto ? COLORS.teal : COLORS.amber,
+                background: (form.safetyStockAuto ? COLORS.teal : COLORS.amber) + "18",
+              }}>
+                {form.safetyStockAuto ? "Auto-calculated" : "Manually set"}
+              </span>
+              {initial && !form.safetyStockAuto && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); set("safetyStockAuto", true); }}
+                  style={{ ...secondaryBtnStyle, padding: "2px 8px", fontSize: 11 }}
+                >
+                  Re-enable auto
+                </button>
+              )}
+            </div>
+            {form.safetyStockAuto && (
+              <div style={{ fontFamily: "Inter", fontSize: 11, color: COLORS.sub, marginTop: 4 }}>
+                Updated automatically from sales variability after each sale (needs 8+ weeks of history).
+              </div>
+            )}
+          </label>
 
           <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
             <div style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.ink, marginBottom: 6 }}>

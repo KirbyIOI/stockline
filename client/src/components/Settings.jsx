@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Save, UserPlus, Trash2, KeyRound, ShieldCheck, User as UserIcon } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Save, UserPlus, Trash2, KeyRound, ShieldCheck, User as UserIcon, UploadCloud, AlertTriangle, CheckCircle2 } from "lucide-react";
+import Papa from "papaparse";
 import { api } from "../api.js";
 import { COLORS, inputStyle, fieldLabelStyle, primaryBtnStyle, secondaryBtnStyle, setCurrencySymbol } from "../styles.js";
 import { SectionHeader } from "./Shared.jsx";
@@ -42,6 +43,7 @@ export default function Settings({ me, onSettingsChanged }) {
       <SectionHeader title="Settings" subtitle="Business details, forecasting behavior, your team, and your own account." />
       <div style={{ maxWidth: 640 }}>
         <GeneralSection isAdmin={isAdmin} onSettingsChanged={onSettingsChanged} />
+        {isAdmin && <ImportSection />}
         {isAdmin && <TeamSection me={me} />}
         <AccountSection me={me} />
       </div>
@@ -147,6 +149,81 @@ function GeneralSection({ isAdmin, onSettingsChanged }) {
           </div>
         )}
       </form>
+    </Card>
+  );
+}
+
+function ImportSection() {
+  const [status, setStatus] = useState(null); // { type: 'idle'|'working'|'ok'|'error', message }
+  const [fileName, setFileName] = useState("");
+  const fileRef = useRef(null);
+
+  const handleFile = (file) => {
+    if (!file) return;
+    setFileName(file.name);
+    setStatus({ type: "working", message: `Parsing ${file.name}…` });
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const rows = (results.data || []).map((r) => ({
+          sku: String(r.sku ?? r.SKU ?? "").trim(),
+          date: String(r.date ?? r.Date ?? r.recorded_at ?? "").trim(),
+          units: Number(r.units ?? r.Units ?? r.qty ?? 0),
+        }));
+
+        if (rows.length === 0) {
+          setStatus({ type: "error", message: "No rows found in the file. Make sure it has sku, date, and units columns." });
+          return;
+        }
+
+        setStatus({ type: "working", message: `Importing ${rows.length} sales records — this replaces each product's existing history.` });
+        api.importSales(rows)
+          .then((res) => {
+            const errCount = (res.errors || []).length;
+            setStatus({
+              type: "ok",
+              message: `Imported ${res.weeksImported} records across ${res.productsUpdated} products.` +
+                (errCount > 0 ? ` ${errCount} row(s) skipped (${res.errors.slice(0, 3).map((e) => e.reason).join("; ")}).` : ""),
+            });
+          })
+          .catch((e) => setStatus({ type: "error", message: e.message }));
+      },
+      error: (err) => setStatus({ type: "error", message: `Failed to read file: ${err.message}` }),
+    });
+  };
+
+  return (
+    <Card title="Import sales history (CSV)" subtitle="Replace a product's sales history in bulk. Format: a CSV with columns sku, date, and units (one row per sale). Only admin accounts can do this.">
+      <input
+        ref={fileRef}
+        type="file" accept=".csv,text/csv"
+        style={{ display: "none" }}
+        onChange={(e) => handleFile(e.target.files?.[0])}
+      />
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={() => fileRef.current?.click()} style={secondaryBtnStyle} disabled={status?.type === "working"}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><UploadCloud size={14} /> {fileName || "Choose CSV file"}</span>
+        </button>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: COLORS.sub }}>
+          Expected columns: sku, date, units
+        </span>
+      </div>
+
+      {status && (
+        <div style={{
+          marginTop: 12, padding: "9px 12px", borderRadius: 8, fontFamily: "Inter", fontSize: 12.5,
+          display: "flex", alignItems: "flex-start", gap: 7,
+          background: status.type === "error" ? COLORS.roseSoft : status.type === "ok" ? "#E8F5E9" : COLORS.bg,
+          color: status.type === "error" ? COLORS.rose : status.type === "ok" ? "#2E7D32" : COLORS.sub,
+        }}>
+          {status.type === "error" ? <AlertTriangle size={14} style={{ marginTop: 1 }} /> :
+           status.type === "ok" ? <CheckCircle2 size={14} style={{ marginTop: 1 }} /> :
+           <span style={{ fontFamily: "Inter" }}>⏳</span>}
+          <span>{status.message}</span>
+        </div>
+      )}
     </Card>
   );
 }

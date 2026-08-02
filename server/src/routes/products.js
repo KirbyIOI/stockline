@@ -1,14 +1,43 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, withTransaction } from "../db.js";
-import { productMetrics } from "../forecast.js";
+import { productMetrics, calculateSafetyStock } from "../forecast.js";
 import { getSettings } from "../settings.js";
+import { requireAdmin } from "../auth.js";
 
 export const router = Router();
 
 function forecastOptions() {
   const s = getSettings();
   return { method: s.forecastMethod, seasonLength: s.seasonLength };
+}
+
+/**
+ * Recalculate and persist safety stock for a product based on forecast RMSE.
+ * Only recalculates if:
+ *  - safety_stock_auto = 1 (not manually overridden)
+ *  - the product has at least 8 weeks of sales history
+ * Returns the new safety_stock value, or null if unchanged.
+ */
+export function recalcSafetyStock(productId) {
+  const row = db.prepare("SELECT * FROM products WHERE id = ?").get(productId);
+  if (!row) return null;
+  if (!row.safety_stock_auto) return null;
+
+  const weekly = db
+    .prepare("SELECT units FROM weekly_sales WHERE product_id = ? ORDER BY week_index ASC")
+    .all(productId)
+    .map((r) => r.units);
+  if (weekly.length < 8) return null;
+
+  const opts = forecastOptions();
+  const product = { id: productId, stock: row.stock, leadTimeDays: row.lead_time_days, safetyStock: row.safety_stock, unitCost: row.unit_cost };
+  const metrics = productMetrics(product, weekly, opts);
+  const newSafetyStock = calculateSafetyStock(metrics.rmse, row.lead_time_days);
+  if (newSafetyStock !== row.safety_stock) {
+    db.prepare("UPDATE products SET safety_stock = ? WHERE id = ?").run(newSafetyStock, productId);
+  }
+  return newSafetyStock;
 }
 
 // Builds the name shown across the app. Products sold in bulk/packages get
@@ -34,6 +63,7 @@ function toProductShape(row) {
     price: row.price,
     leadTimeDays: row.lead_time_days,
     safetyStock: row.safety_stock,
+    safetyStockAuto: Boolean(row.safety_stock_auto),
     qtyPerUnit: row.qty_per_unit || 0,
     qtyUnitLabel: row.qty_unit_label || "",
   };
@@ -148,6 +178,12 @@ router.put("/:id", (req, res) => {
 
   const pricingError = validatePricing(merged.unitCost, merged.price);
   if (pricingError) return res.status(400).json(pricingError);
+
+  // If the admin explicitly changed safetyStock (and didn't re-enable auto),
+  // disable auto-recalculation so the manual value is respected.
+  const safetyStockChanged = req.body.safetyStock !== undefined && Number(req.body.safetyStock) !== existing.safety_stock;
+  const reenableAuto = req.body.safetyStockAuto === true;
+
   db.prepare(`
     UPDATE products SET name=?, sku=?, category=?, stock=?, unit_cost=?, price=?, lead_time_days=?, safety_stock=?, qty_per_unit=?, qty_unit_label=?
     WHERE id=?
@@ -157,6 +193,12 @@ router.put("/:id", (req, res) => {
     Math.max(0, Number(merged.qtyPerUnit) || 0), String(merged.qtyUnitLabel || "").trim().slice(0, 20),
     req.params.id
   );
+
+  if (reenableAuto) {
+    db.prepare("UPDATE products SET safety_stock_auto = 1 WHERE id = ?").run(req.params.id);
+  } else if (safetyStockChanged) {
+    db.prepare("UPDATE products SET safety_stock_auto = 0 WHERE id = ?").run(req.params.id);
+  }
 
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
   const product = toProductShape(row);
@@ -169,6 +211,90 @@ router.delete("/:id", (req, res) => {
   const result = db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: "Product not found" });
   res.status(204).end();
+});
+
+// POST /api/products/import-sales — bulk import historical sales from CSV data
+// Body: { rows: [{ sku, date, units }] }
+// Replaces each product's entire weekly_sales history with the imported data.
+// Admin-only — this can rewrite forecasting history for many products.
+router.post("/import-sales", requireAdmin, (req, res) => {
+  const { rows } = req.body || {};
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: "rows array is required with at least one entry" });
+  }
+
+  // Group rows by SKU, validating each row
+  const bySku = {};
+  const errors = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const sku = String(r.sku || "").trim();
+    const dateStr = String(r.date || "").trim();
+    const units = Number(r.units);
+
+    if (!sku) { errors.push({ row: i, reason: "Missing SKU" }); continue; }
+    if (!dateStr) { errors.push({ row: i, reason: `Missing date for SKU "${sku}"` }); continue; }
+    if (!Number.isFinite(units) || units < 0 || !Number.isInteger(units)) {
+      errors.push({ row: i, reason: `Invalid units "${r.units}" for SKU "${sku}" — must be a non-negative integer` });
+      continue;
+    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      errors.push({ row: i, reason: `Invalid date "${dateStr}" for SKU "${sku}"` });
+      continue;
+    }
+
+    if (!bySku[sku]) bySku[sku] = [];
+    bySku[sku].push({ date, units, rowIndex: i });
+  }
+
+  // Look up each SKU's product
+  let productsUpdated = 0;
+  let weeksImported = 0;
+  const notFoundSkus = [];
+
+  withTransaction(() => {
+    for (const [sku, rows] of Object.entries(bySku)) {
+      const product = db.prepare("SELECT * FROM products WHERE sku = ?").get(sku);
+      if (!product) {
+        notFoundSkus.push(sku);
+        continue;
+      }
+
+      // Sort rows by date ascending
+      rows.sort((a, b) => a.date - b.date);
+
+      // Delete existing weekly sales for this product
+      db.prepare("DELETE FROM weekly_sales WHERE product_id = ?").run(product.id);
+
+      // Insert sorted rows with sequential week_index starting at 0
+      const insert = db.prepare("INSERT INTO weekly_sales (product_id, week_index, units, recorded_at) VALUES (?, ?, ?, ?)");
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const weekIndex = i;
+        const recordedAt = r.date.toISOString().slice(0, 19).replace("T", " ");
+        insert.run(product.id, weekIndex, r.units, recordedAt);
+      }
+
+      // Recalculate safety stock (no gating — admin is deliberately providing better data)
+      const weekly = rows.map((r) => r.units);
+      const opts = forecastOptions();
+      const productShaped = { id: product.id, stock: product.stock, leadTimeDays: product.lead_time_days, safetyStock: product.safety_stock, unitCost: product.unit_cost };
+      const metrics = productMetrics(productShaped, weekly, opts);
+      const newSafetyStock = calculateSafetyStock(metrics.rmse, product.lead_time_days);
+      db.prepare("UPDATE products SET safety_stock = ?, safety_stock_auto = 1 WHERE id = ?").run(newSafetyStock, product.id);
+
+      productsUpdated++;
+      weeksImported += rows.length;
+    }
+  });
+
+  // Report SKUs that weren't found as errors
+  for (const sku of notFoundSkus) {
+    errors.push({ row: null, reason: `SKU "${sku}" not found in products` });
+  }
+
+  res.json({ productsUpdated, weeksImported, errors });
 });
 
 // POST /api/products/:id/sales — record units sold this week (advances the forecast window)
@@ -184,6 +310,9 @@ router.post("/:id/sales", (req, res) => {
     db.prepare("INSERT INTO weekly_sales (product_id, week_index, units) VALUES (?, ?, ?)").run(product.id, nextWeek, units);
     db.prepare("UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?").run(units, product.id);
   });
+
+  // Recalculate safety stock from updated forecast RMSE
+  recalcSafetyStock(product.id);
 
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(product.id);
   const shaped = toProductShape(row);

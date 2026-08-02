@@ -22,6 +22,7 @@ db.exec(`
     price REAL NOT NULL DEFAULT 0,
     lead_time_days INTEGER NOT NULL DEFAULT 14,
     safety_stock INTEGER NOT NULL DEFAULT 0,
+    safety_stock_auto INTEGER NOT NULL DEFAULT 1,
     qty_per_unit REAL NOT NULL DEFAULT 0,
     qty_unit_label TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -87,6 +88,9 @@ if (!productCols.includes("qty_per_unit")) {
 }
 if (!productCols.includes("qty_unit_label")) {
   db.exec("ALTER TABLE products ADD COLUMN qty_unit_label TEXT NOT NULL DEFAULT '';");
+}
+if (!productCols.includes("safety_stock_auto")) {
+  db.exec("ALTER TABLE products ADD COLUMN safety_stock_auto INTEGER NOT NULL DEFAULT 1;");
 }
 
 export function isEmpty() {

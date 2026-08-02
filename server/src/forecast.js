@@ -192,6 +192,21 @@ export function productMetrics(product, weekly, options = {}) {
   };
 }
 
+/**
+ * Standard inventory-theory safety stock calculation.
+ * Converts the model's weekly RMSE to a daily standard deviation and
+ * scales by √leadTimeDays.
+ *
+ * @param {number} rmseWeekly - Root mean squared error of weekly forecast
+ * @param {number} leadTimeDays - Supplier lead time in days
+ * @param {number} [z=1.65] - Service-level factor (95% service level)
+ * @returns {number} Recommended safety stock (rounded, never negative)
+ */
+export function calculateSafetyStock(rmseWeekly, leadTimeDays, z = 1.65) {
+  const sigmaDaily = rmseWeekly / Math.sqrt(7);
+  return Math.max(0, Math.round(z * sigmaDaily * Math.sqrt(leadTimeDays)));
+}
+
 let mlTrainingQueued = false;
 
 /**

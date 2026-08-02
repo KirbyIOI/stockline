@@ -75,6 +75,7 @@ export const api = {
   createProduct: (data) => request("/products", { method: "POST", body: JSON.stringify(data) }),
   updateProduct: (id, data) => request(`/products/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: "DELETE" }),
+  importSales: (rows) => request("/products/import-sales", { method: "POST", body: JSON.stringify({ rows }) }),
   recordSale: (id, units) => request(`/products/${id}/sales`, { method: "POST", body: JSON.stringify({ units }) }),
 
 getOrders: (status) => request(`/orders${status ? `?status=${status}` : ""}`),
