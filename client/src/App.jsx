@@ -126,6 +126,13 @@ const [navOpen, setNavOpen] = useState(false);
       p.category.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Categories already in use (including custom ones entered manually), so the
+  // product modal can offer them as reusable options.
+  const allCategories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
+
   const withErrorHandling = (fn) => async (...args) => {
     try { await fn(...args); } catch (e) { setError(e.message); }
   };
@@ -383,7 +390,7 @@ const [navOpen, setNavOpen] = useState(false);
       </div>
 
       {editing !== null && (
-        <ProductModal initial={editing.id ? editing : null} onClose={() => { setEditing(null); setFormError(null); }} onSave={saveProduct} error={formError} />
+        <ProductModal initial={editing.id ? editing : null} onClose={() => { setEditing(null); setFormError(null); }} onSave={saveProduct} error={formError} allCategories={allCategories} />
       )}
       {receiveFor && (
         <ReceiveModal product={receiveFor} suggested={metrics[receiveFor.id]?.suggestedOrder}

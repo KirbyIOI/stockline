@@ -74,10 +74,24 @@ router.get("/:id", (req, res) => {
   res.json({ ...product, weekly, metrics: productMetrics(product, weekly, forecastOptions()) });
 });
 
+// Reject products whose sale price is below cost — selling below cost is
+// almost always a data-entry error.
+function validatePricing(unitCost, price) {
+  const cost = Number(unitCost) || 0;
+  const sale = Number(price) || 0;
+  if (cost > sale) {
+    return { error: `Sale price (${sale}) must be greater than or equal to the unit cost (${cost})` };
+  }
+  return null;
+}
+
 // POST /api/products — create a new product
 router.post("/", (req, res) => {
   const { name, sku, category, stock, unitCost, price, leadTimeDays, safetyStock } = req.body;
   if (!name || !sku) return res.status(400).json({ error: "name and sku are required" });
+
+  const pricingError = validatePricing(unitCost, price);
+  if (pricingError) return res.status(400).json(pricingError);
 
   const id = randomUUID();
   try {
@@ -112,6 +126,9 @@ router.put("/:id", (req, res) => {
   if (!existing) return res.status(404).json({ error: "Product not found" });
 
   const merged = { ...toProductShape(existing), ...req.body };
+
+  const pricingError = validatePricing(merged.unitCost, merged.price);
+  if (pricingError) return res.status(400).json(pricingError);
   db.prepare(`
     UPDATE products SET name=?, sku=?, category=?, stock=?, unit_cost=?, price=?, lead_time_days=?, safety_stock=?
     WHERE id=?

@@ -1,15 +1,87 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, AlertCircle, TrendingUp } from "lucide-react";
 import {
   overlayStyle, modalStyle, fieldLabelStyle, inputStyle,
   iconBtnStyle, primaryBtnStyle, secondaryBtnStyle, COLORS, money,
 } from "../styles.js";
 
+// Fixed product categories offered as a dropdown when creating/editing a
+// product. The "Other…" option opens a manual-entry field, and any category
+// that ends up on a product is also offered afterwards (via allCategories),
+// so custom categories become reusable options.
+const FIXED_CATEGORIES = [
+  "Grains & Flour",
+  "Cooking Oil",
+  "Textiles",
+  "Building Materials",
+  "Electronics",
+];
+const OTHER_CATEGORY = "__other__";
+
 export function ProductModal({ initial, onClose, onSave, error, allCategories = [] }) {
+  const initialCategory = initial?.category || "";
+  const isCustomInitial =
+    initialCategory !== "" && !FIXED_CATEGORIES.includes(initialCategory);
+
   const [form, setForm] = useState(initial || {
     name: "", sku: "", category: "", stock: 0, unitCost: 0, price: 0, leadTimeDays: 14, safetyStock: 10,
   });
+  const [customOpen, setCustomOpen] = useState(isCustomInitial);
+  const [customValue, setCustomValue] = useState(isCustomInitial ? initialCategory : "");
+  const [localError, setLocalError] = useState(null);
+
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Unique category options: fixed ones first, then any categories already in
+  // use (so a previously manually-entered category becomes selectable).
+  const knownCategories = [
+    ...FIXED_CATEGORIES,
+    ...allCategories.filter((c) => c && !FIXED_CATEGORIES.includes(c)),
+  ];
+  if (initialCategory && !knownCategories.includes(initialCategory)) {
+    knownCategories.push(initialCategory);
+  }
+
+  const cost = Number(form.unitCost) || 0;
+  const price = Number(form.price) || 0;
+  const margin = price - cost;
+  const marginPct = price > 0 ? (margin / price) * 100 : 0;
+
+  const selectValue = customOpen
+    ? OTHER_CATEGORY
+    : FIXED_CATEGORIES.includes(form.category)
+    ? form.category
+    : form.category || "";
+
+  const handleCategorySelect = (e) => {
+    const val = e.target.value;
+    if (val === OTHER_CATEGORY) {
+      setCustomOpen(true);
+      setLocalError(null);
+    } else {
+      setCustomOpen(false);
+      set("category", val);
+      setLocalError(null);
+    }
+  };
+
+  const handleSave = () => {
+    if (cost > price) {
+      setLocalError("Sale price must be greater than or equal to the unit cost — you can't sell below cost.");
+      return;
+    }
+    let category = form.category;
+    if (customOpen) {
+      category = customValue.trim();
+      if (!category) {
+        setLocalError("Please enter a category name for the product.");
+        return;
+      }
+    }
+    setLocalError(null);
+    onSave({ ...form, category });
+  };
+
   const numField = (k, label, step = 1) => (
     <label style={fieldLabelStyle}>
       {label}
@@ -20,20 +92,24 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
       />
     </label>
   );
+
   return (
     <div style={overlayStyle} onClick={onClose}>
       <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 18, margin: 0, color: COLORS.ink }}>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, margin: 0, color: COLORS.ink }}>
             {initial ? "Edit product" : "Add product"}
           </h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        {error && (
-          <div style={{ background: COLORS.roseSoft, color: COLORS.rose, borderRadius: 8, padding: "8px 12px", fontFamily: "Inter", fontSize: 12.5, marginBottom: 14 }}>
-            {error}
+
+        {(error || localError) && (
+          <div style={{ background: COLORS.roseSoft, color: COLORS.rose, borderRadius: 8, padding: "8px 12px", fontFamily: "Inter", fontSize: 12.5, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+            <AlertCircle size={14} />
+            {error || localError}
           </div>
         )}
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <label style={{ ...fieldLabelStyle, gridColumn: "1 / -1" }}>
             Product name
@@ -43,24 +119,61 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
             SKU
             <input value={form.sku} onChange={(e) => set("sku", e.target.value)} style={inputStyle} placeholder="WMB-050" />
           </label>
+
           <label style={fieldLabelStyle}>
             Category
-            <input value={form.category} onChange={(e) => set("category", e.target.value)} style={inputStyle} placeholder="Grains and Flour" list="category-list" />
-            <datalist id="category-list">
-              {allCategories.map((cat) => (
-                <option key={cat} value={cat} />
+            <select
+              value={selectValue}
+              onChange={handleCategorySelect}
+              style={{ ...inputStyle, cursor: "pointer" }}
+            >
+              {!initialCategory && !customOpen && !form.category && (
+                <option value="" disabled>Select a category…</option>
+              )}
+              {knownCategories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
               ))}
-            </datalist>
+              <option value={OTHER_CATEGORY}>Other… (enter your own)</option>
+            </select>
           </label>
+
+          {customOpen && (
+            <label style={{ ...fieldLabelStyle, gridColumn: "1 / -1" }}>
+              Custom category name
+              <input
+                value={customValue}
+                onChange={(e) => setCustomValue(e.target.value)}
+                style={inputStyle}
+                placeholder="e.g. Beverages"
+                autoFocus
+              />
+            </label>
+          )}
+
           {numField("stock", "Current stock (units)")}
-          {numField("unitCost", "Unit cost (TSh)", 500)}
-          {numField("price", "Sale price (TSh)", 500)}
+          {numField("unitCost", "Unit cost", 500)}
+          {numField("price", "Sale price", 500)}
           {numField("leadTimeDays", "Supplier lead time (days)")}
           {numField("safetyStock", "Safety stock (units)")}
         </div>
+
+        {(cost > 0 || price > 0) && (
+          <div style={{
+            marginTop: 12, padding: "8px 12px", borderRadius: 8, fontFamily: "Inter", fontSize: 12.5,
+            background: margin < 0 ? COLORS.roseSoft : "#E8F5E9",
+            color: margin < 0 ? COLORS.rose : "#2E7D32",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <TrendingUp size={14} />
+            {margin < 0
+              ? `Warning: selling below cost — unit cost is ${money(cost)} but sale price is ${money(price)}.`
+              : `Profit per unit: ${money(margin)} (${marginPct.toFixed(1)}% margin)`}
+          </div>
+        )}
+
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22 }}>
           <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
-          <button onClick={() => onSave(form)} style={primaryBtnStyle} disabled={!form.name || !form.sku}>
+          <button onClick={handleSave} style={primaryBtnStyle} disabled={!form.name || !form.sku}>
             {initial ? "Save changes" : "Add product"}
           </button>
         </div>
@@ -77,7 +190,7 @@ export function SaleModal({ product, onClose, onRecord }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: '\"Space Grotesk\", sans-serif', fontSize: 17, margin: 0 }}>Record this week's sales</h3>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Record this week's sales</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>
@@ -127,7 +240,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: '\"Space Grotesk\", sans-serif', fontSize: 17, margin: 0 }}>Receive shipment</h3>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
@@ -163,18 +276,18 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
     <div style={overlayStyle} onClick={onClose}>
       <div style={{ ...modalStyle, maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h3 style={{ fontFamily: "\"Space Grotesk\", sans-serif", fontSize: 17, margin: 0 }}>Purchase order draft</h3>
+          <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Purchase order draft</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <div style={{ border: "1px solid " + COLORS.line, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
           {items.map((i) => (
             <div key={i.product.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + COLORS.line, fontFamily: "Inter", fontSize: 13 }}>
-              <span style={{ flex: 1 }}>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "\"IBM Plex Mono\", monospace", fontSize: 11.5 }}>{i.qty} units</span></span>
-              <span style={{ fontFamily: "\"IBM Plex Mono\", monospace" }}>{money(i.cost)}</span>
+              <span style={{ flex: 1 }}>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>{i.qty} units</span></span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(i.cost)}</span>
             </div>
           ))}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", fontFamily: "Inter", fontWeight: 700, fontSize: 13.5, background: "#FAFBFD" }}>
-            <span>Total</span><span style={{ fontFamily: "\"IBM Plex Mono\", monospace" }}>{money(total)}</span>
+            <span>Total</span><span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(total)}</span>
           </div>
         </div>
         <textarea readOnly value={text} rows={items.length + 4}
@@ -192,3 +305,4 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
     </div>
   );
 }
+
