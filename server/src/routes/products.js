@@ -125,9 +125,12 @@ router.post("/", (req, res) => {
     throw err;
   }
 
-  // seed a short, mostly-flat sales history so metrics are meaningful immediately
+  // Seed a short, mostly-flat sales history so metrics are meaningful
+  // immediately — but only in proportion to the actual opening stock. A brand
+  // new product created with 0 stock starts with 0 seeded sales (a flat chart
+  // at zero) rather than phantom history that makes it look established.
   const insertWeek = db.prepare("INSERT INTO weekly_sales (product_id, week_index, units) VALUES (?, ?, ?)");
-  const baseline = Math.max(1, Math.round((Number(stock) || 8) / 6));
+  const baseline = Math.max(0, Math.round((Number(stock) || 0) / 6));
   for (let i = 0; i < 4; i++) insertWeek.run(id, i, baseline);
 
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
