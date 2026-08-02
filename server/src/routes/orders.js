@@ -53,9 +53,37 @@ router.post("/", (req, res) => {
   // Distinguish orders created manually ("manual") from ones generated from
   // the Alerts page's "Mark ordered" button ("alert").
   const orderSource = source === "alert" ? "alert" : "manual";
-  db.prepare("INSERT INTO orders (id, product_id, qty, status, supplier_name, order_source) VALUES (?, ?, ?, 'open', ?, ?)").run(id, productId, Number(qty), String(supplierName || ""), orderSource);
+
+  // Supplier resolution: an explicitly provided supplierName always wins.
+  // When it's blank (e.g. alert-generated orders from the client send ""),
+  // infer a sensible supplier from existing order history so we don't store
+  // blank for products/businesses that already have known supplier
+  // relationships. Only leave it blank when there's truly no history anywhere.
+  let resolvedSupplier = String(supplierName || "").trim();
+  let supplierInferred = false;
+  if (!resolvedSupplier) {
+    const lastForProduct = db.prepare(`
+      SELECT supplier_name FROM orders
+      WHERE product_id = ? AND supplier_name != ''
+      ORDER BY placed_at DESC LIMIT 1
+    `).get(productId);
+    const lastAny = lastForProduct
+      ? null
+      : db.prepare(`
+          SELECT supplier_name FROM orders
+          WHERE supplier_name != ''
+          ORDER BY placed_at DESC LIMIT 1
+        `).get();
+    const inferred = lastForProduct || lastAny;
+    if (inferred && inferred.supplier_name) {
+      resolvedSupplier = inferred.supplier_name;
+      supplierInferred = true;
+    }
+  }
+
+  db.prepare("INSERT INTO orders (id, product_id, qty, status, supplier_name, order_source) VALUES (?, ?, ?, 'open', ?, ?)").run(id, productId, Number(qty), resolvedSupplier, orderSource);
   const row = db.prepare(SELECT_JOIN + "WHERE o.id = ?").get(id);
-  res.status(201).json(toOrderShape(row));
+  res.status(201).json({ ...toOrderShape(row), supplierInferred });
 });
 
 // PATCH /api/orders/:id/cancel
