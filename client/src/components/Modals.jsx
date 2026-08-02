@@ -18,6 +18,22 @@ const FIXED_CATEGORIES = [
 ];
 const OTHER_CATEGORY = "__other__";
 
+// SI and common retail units offered as a dropdown for the "unit label" field,
+// so bulk products like "Wimbi Flour (50 kg)" or "Jerrican Oil (20 litres)"
+// are entered from a fixed list instead of free text. "Quantity per unit"
+// holds the amount (e.g. 20) and this list provides the unit (e.g. kg).
+const UNIT_OPTIONS = [
+  // Mass
+  "kg", "g", "mg", "tonnes", "lb", "oz",
+  // Volume
+  "litres", "millilitres", "gallons",
+  // Length
+  "metres", "centimetres", "millimetres",
+  "yards", "feet", "inches",
+  // Pieces / packaging
+  "pieces", "dozen", "packets", "cartons", "boxes", "rolls", "bottles", "cans",
+];
+
 export function ProductModal({ initial, onClose, onSave, error, allCategories = [] }) {
   const initialCategory = initial?.category || "";
   const isCustomInitial =
@@ -163,7 +179,25 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               {numField("qtyPerUnit", "Quantity per unit", 1)}
-              {numField("qtyUnitLabel", "Unit label")}
+              <label style={fieldLabelStyle}>
+                Unit label
+                <select
+                  value={form.qtyUnitLabel}
+                  onChange={(e) => set("qtyUnitLabel", e.target.value)}
+                  style={{ ...inputStyle, cursor: "pointer" }}
+                >
+                  {!form.qtyUnitLabel && (
+                    <option value="" disabled>Select a unit…</option>
+                  )}
+                  {/* Keep the existing label selectable if it isn't in the list */}
+                  {form.qtyUnitLabel && !UNIT_OPTIONS.includes(form.qtyUnitLabel) && (
+                    <option value={form.qtyUnitLabel}>{form.qtyUnitLabel}</option>
+                  )}
+                  {UNIT_OPTIONS.map((u) => (
+                    <option key={u} value={u}>{u}</option>
+                  ))}
+                </select>
+              </label>
             </div>
             {Number(form.qtyPerUnit) > 0 && (
               <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginTop: 6 }}>
