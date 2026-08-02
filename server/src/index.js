@@ -6,7 +6,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { seed } from "./seed.js";
+import { seed, backfillOrderSuppliers } from "./seed.js";
 import { requireAuth, requireAdmin } from "./auth.js";
 import { bootstrapAdmin } from "./users.js";
 import { router as authRouter } from "./routes/auth.js";
@@ -21,6 +21,7 @@ import { router as assistantRouter, publicRouter as assistantPublicRouter } from
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 seed(); // populates sample data on first run only; no-ops if the DB already has products
+backfillOrderSuppliers(); // ensures any existing orders have a supplier name (no N/A on sample data)
 bootstrapAdmin(); // creates the first admin account from .env if no users exist yet
 
 const app = express();
