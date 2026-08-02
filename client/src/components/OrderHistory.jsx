@@ -171,10 +171,11 @@ export default function OrderHistory() {
   })
 
   const exportCSV = () => {
-    const h = ["Date Placed", "Product", "SKU", "Supplier", "Qty", "Status", "Date Received"]
+    const h = ["Date Placed", "Product", "SKU", "Supplier", "Qty", "Source", "Status", "Date Received"]
     const r = filteredOrders.map((o) => [
       o.placedAt, o.displayName || o.productName || "---", o.productSku || "---",
-      o.supplierName || "---", o.qty, o.status, o.receivedAt || "---",
+      o.supplierName || "---", o.qty, o.source === "manual" ? "Manual PO" : "Reorder SYS",
+      o.status, o.receivedAt || "---",
     ])
     downloadCSV("orders-" + new Date().toISOString().slice(0, 10) + ".csv", [h, ...r])
   }
@@ -244,16 +245,15 @@ export default function OrderHistory() {
               <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>SKU</th>
               <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Supplier</th>
               <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Qty</th>
-              <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Source</th>
               <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Status</th>
               <th style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.sub, textAlign: "left", padding: "12px 16px", borderBottom: "1px solid " + COLORS.line }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>Loading...</td></tr>
+              <tr><td colSpan={7} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>Loading...</td></tr>
             ) : filteredOrders.length === 0 ? (
-              <tr><td colSpan={8} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>
+              <tr><td colSpan={7} style={{ textAlign: "center", color: COLORS.sub, padding: 30, fontFamily: "Inter", fontSize: 13 }}>
                 {search || filter !== "all" ? "No matches." : "No orders yet."}
               </td></tr>
             ) : filteredOrders.map((o) => (
@@ -268,15 +268,15 @@ export default function OrderHistory() {
                 <td style={{ fontFamily: "Inter", fontSize: 13, padding: "12px 16px" }}>
                   {o.supplierName || <span style={{ color: COLORS.sub, fontStyle: "italic" }}>N/A</span>}
                 </td>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, padding: "12px 16px" }}>{o.qty}</td>
                 <td style={{ padding: "12px 16px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600 }}>{o.qty}</div>
                   {o.source === "manual" ? (
-                    <span style={{ fontFamily: "Inter", fontSize: 11, fontWeight: 600, color: COLORS.primary, background: COLORS.primarySoft, padding: "3px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontFamily: "Inter", fontSize: 11, fontWeight: 600, color: COLORS.primary, background: COLORS.primarySoft, padding: "3px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
                       Manual PO
                     </span>
                   ) : (
-                    <span style={{ fontFamily: "Inter", fontSize: 11, fontWeight: 600, color: COLORS.teal, background: COLORS.tealSoft, padding: "3px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      Alert
+                    <span style={{ fontFamily: "Inter", fontSize: 11, fontWeight: 600, color: COLORS.teal, background: COLORS.tealSoft, padding: "3px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+                      Reorder SYS
                     </span>
                   )}
                 </td>
