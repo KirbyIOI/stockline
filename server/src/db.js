@@ -22,6 +22,8 @@ db.exec(`
     price REAL NOT NULL DEFAULT 0,
     lead_time_days INTEGER NOT NULL DEFAULT 14,
     safety_stock INTEGER NOT NULL DEFAULT 0,
+    qty_per_unit REAL NOT NULL DEFAULT 0,
+    qty_unit_label TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -42,7 +44,8 @@ db.exec(`
     status TEXT NOT NULL DEFAULT 'open',
     placed_at TEXT NOT NULL DEFAULT (datetime('now')),
     received_at TEXT,
-    supplier_name TEXT NOT NULL DEFAULT ''
+    supplier_name TEXT NOT NULL DEFAULT '',
+    order_source TEXT NOT NULL DEFAULT 'alert'
   );
 
   CREATE INDEX IF NOT EXISTS idx_orders_product ON orders(product_id, status);
@@ -75,6 +78,15 @@ try {
   db.exec("ALTER TABLE orders ADD COLUMN order_source TEXT NOT NULL DEFAULT 'alert';");
 } catch {
   // Column already exists — this is fine.
+}
+// Migration for projects created before qty-per-unit existed: add the columns
+// so an existing deployed DB picks up the new feature without a reset.
+const productCols = db.prepare("PRAGMA table_info(products)").all().map((c) => c.name);
+if (!productCols.includes("qty_per_unit")) {
+  db.exec("ALTER TABLE products ADD COLUMN qty_per_unit REAL NOT NULL DEFAULT 0;");
+}
+if (!productCols.includes("qty_unit_label")) {
+  db.exec("ALTER TABLE products ADD COLUMN qty_unit_label TEXT NOT NULL DEFAULT '';");
 }
 
 export function isEmpty() {

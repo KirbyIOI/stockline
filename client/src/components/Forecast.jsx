@@ -36,7 +36,7 @@ export default function Forecast({ products, selected, detail, onSelect }) {
               borderRadius: 20, padding: "6px 13px", fontFamily: "Inter", fontSize: 12.5, fontWeight: 500, cursor: "pointer",
             }}
           >
-            {p.name}
+            {p.displayName || p.name}
           </button>
         ))}
       </div>
@@ -61,6 +61,7 @@ export default function Forecast({ products, selected, detail, onSelect }) {
                 <Line dataKey="forecast" stroke={COLORS.primary} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 2.5 }} name="Forecast" />
               </ComposedChart>
             </ResponsiveContainer>
+            <ReorderSummary product={detail} metrics={metrics} />
           </div>
 
           <div style={{ flex: "1 1 240px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -75,6 +76,34 @@ export default function Forecast({ products, selected, detail, onSelect }) {
   );
 }
 
+function ReorderSummary({ product, metrics }) {
+  // Plain-language explanation of why this reorder quantity is suggested,
+  // tying the sales trend to the number below the chart.
+  const slope = metrics.slope;
+  const trendWord = slope > 0.15 ? "rising" : slope < -0.15 ? "declining" : "holding steady";
+  const direction = slope > 0.15 ? "up" : slope < -0.15 ? "down" : "steady";
+  const runway =
+    Number.isFinite(metrics.daysOfStock)
+      ? `${Math.round(metrics.daysOfStock)} days of current stock left`
+      : "no recent sales history to project a runway";
+  const need = `next-6-week demand of ${metrics.demandNext6} units`;
+
+  const reason =
+    metrics.suggestedOrder <= 0
+      ? `Sales are ${trendWord} and you already hold ${product.stock} units, so no reorder is suggested right now — current stock covers ${need}.`
+      : `With sales ${trendWord} (${direction === "up" ? "rising" : direction === "down" ? "declining" : "holding steady"} at ${Math.abs(slope).toFixed(1)} units/week) and ${runway}, the suggested reorder of ${metrics.suggestedOrder} units tops your stock back up toward the ${metrics.reorderPoint}-unit reorder point plus the next ${need}.`;
+
+  return (
+    <div style={{
+      marginTop: 14, padding: "12px 14px", borderRadius: 10, fontFamily: "Inter", fontSize: 12.5, lineHeight: 1.55,
+      background: "#EFF6FF", border: `1px solid #BFDBFE`, color: COLORS.ink,
+    }}>
+      <div style={{ fontWeight: 700, marginBottom: 3, color: COLORS.primary }}>Why reorder {metrics.suggestedOrder} units?</div>
+      {reason}
+    </div>
+  );
+}
+
 function ForecastHeader({ detail, metrics }) {
   const trendLabel = metrics.slope > 0.15 ? "trending up" : metrics.slope < -0.15 ? "trending down" : "roughly flat";
   const TrendIcon = metrics.slope > 0.15 ? ArrowUpRight : metrics.slope < -0.15 ? ArrowDownRight : Clock;
@@ -82,7 +111,7 @@ function ForecastHeader({ detail, metrics }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
       <div>
-        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, margin: 0 }}>{detail.name}</h3>
+        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, margin: 0 }}>{detail.displayName || detail.name}</h3>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{detail.sku} · {detail.category}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 5, color: trendColor, fontFamily: "Inter", fontSize: 12.5, fontWeight: 600 }}>
@@ -91,3 +120,4 @@ function ForecastHeader({ detail, metrics }) {
     </div>
   );
 }
+

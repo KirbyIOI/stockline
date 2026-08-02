@@ -121,7 +121,7 @@ const [navOpen, setNavOpen] = useState(false);
   );
   const filteredInventory = products.filter(
     (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.displayName || p.name).toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||
       p.category.toLowerCase().includes(search.toLowerCase())
   );
@@ -156,8 +156,8 @@ const [navOpen, setNavOpen] = useState(false);
     await refreshAll();
   });
 
-  const placeOrder = withErrorHandling(async (productId, qty) => {
-    await api.createOrder(productId, qty);
+  const placeOrder = withErrorHandling(async (productId, qty, source) => {
+    await api.createOrder(productId, qty, "", source);
     await refreshOrders();
   });
 
@@ -338,6 +338,7 @@ const [navOpen, setNavOpen] = useState(false);
         {view === "inventory" && (
           <Inventory
             products={filteredInventory} metrics={metrics} search={search} setSearch={setSearch}
+            isAdmin={me?.role === "admin"}
             onAdd={() => { setFormError(null); setEditing({}); }}
             onEdit={(p) => { setFormError(null); setEditing(p); }}
             onDelete={deleteProduct}
@@ -369,13 +370,13 @@ const [navOpen, setNavOpen] = useState(false);
                 setView("forecast");
               }
             }}
-            onPlaceOrder={placeOrder} onCancelOrder={cancelOrder}
+            onPlaceOrder={(productId, qty) => placeOrder(productId, qty, "alert")} onCancelOrder={cancelOrder}
             onReceive={(p) => setReceiveFor(p)}
             alertOrdered={alertOrdered}
             onAlertMarkOrdered={async (id) => {
               const product = products.find(p => p.id === id);
               if (product) {
-                await placeOrder(id, product.metrics?.suggestedOrder || Math.max(1, product.safetyStock || 1));
+                await placeOrder(id, product.metrics?.suggestedOrder || Math.max(1, product.safetyStock || 1), "alert");
               }
             }}
             onAlertReceive={(id) => setAlertOrdered((a) => { const n = { ...a }; delete n[id]; return n; })}

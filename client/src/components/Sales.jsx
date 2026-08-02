@@ -13,7 +13,7 @@ export default function Sales({ products, onCreateSale }) {
   const filteredProducts = products.filter(
     (p) =>
       p.stock > 0 &&
-      (p.name.toLowerCase().includes(search.toLowerCase()) ||
+      ((p.displayName || p.name).toLowerCase().includes(search.toLowerCase()) ||
         p.sku.toLowerCase().includes(search.toLowerCase()) ||
         p.category.toLowerCase().includes(search.toLowerCase()))
   );
@@ -143,7 +143,7 @@ export default function Sales({ products, onCreateSale }) {
                 {filteredProducts.map((p) => (
                   <tr key={p.id} className="row-hover">
                     <td>
-                      <div style={{ fontWeight: 600 }}>{p.name}</div>
+                      <div style={{ fontWeight: 600 }}>{p.displayName || p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
                     </td>
                     <td style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{p.stock}</td>
@@ -180,7 +180,7 @@ export default function Sales({ products, onCreateSale }) {
               cart.map((item) => (
                 <div key={item.product.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 20px", borderBottom: "1px solid " + COLORS.line }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product.name}</div>
+                    <div style={{ fontFamily: "Inter", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product.displayName || item.product.name}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{money(item.product.price)}/unit</div>
                     <button onClick={() => updateQty(item.product.id, item.units - 1)} style={{ ...iconBtnStyle, width: 28, height: 28, border: "1px solid " + COLORS.line, borderRadius: 6 }}><Minus size={12} /></button>
                     <input type="number" min={1} max={item.product.stock} value={item.units} onChange={(e) => {

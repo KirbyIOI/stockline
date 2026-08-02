@@ -11,10 +11,22 @@ function forecastOptions() {
   return { method: s.forecastMethod, seasonLength: s.seasonLength };
 }
 
+// Builds the name shown across the app. Products sold in bulk/packages get
+// their quantity in parentheses — e.g. "Jerrican Cooking Oil (20 litres)" —
+// while ordinary single-unit items (a TV, a basket) keep just their name.
+export function displayName(product) {
+  const qty = Number(product?.qty_per_unit) || 0;
+  const label = (product?.qty_unit_label || "").trim();
+  if (qty > 0 && label) return `${product.name} (${qty} ${label})`;
+  if (qty > 0) return `${product.name} (${qty} units)`;
+  return product.name;
+}
+
 function toProductShape(row) {
   return {
     id: row.id,
     name: row.name,
+    displayName: displayName(row),
     sku: row.sku,
     category: row.category,
     stock: row.stock,
@@ -22,6 +34,8 @@ function toProductShape(row) {
     price: row.price,
     leadTimeDays: row.lead_time_days,
     safetyStock: row.safety_stock,
+    qtyPerUnit: row.qty_per_unit || 0,
+    qtyUnitLabel: row.qty_unit_label || "",
   };
 }
 
@@ -36,14 +50,15 @@ function getWeekly(productId, limit = 14) {
 router.get("/sales-history", (req, res) => {
   const rows = db.prepare(`
     SELECT ws.id, ws.product_id, ws.units, ws.recorded_at,
-           p.name AS product_name, p.sku AS product_sku, p.price AS unit_price
+           p.name AS product_name, p.sku AS product_sku, p.price AS unit_price,
+           p.qty_per_unit, p.qty_unit_label
     FROM weekly_sales ws
     JOIN products p ON p.id = ws.product_id
     ORDER BY ws.recorded_at DESC
   `).all();
   const result = rows.map((r) => ({
     id: r.id,
-    productName: r.product_name,
+    productName: displayName(r),
     productSku: r.product_sku,
     units: r.units,
     unitPrice: r.unit_price,
@@ -87,7 +102,7 @@ function validatePricing(unitCost, price) {
 
 // POST /api/products — create a new product
 router.post("/", (req, res) => {
-  const { name, sku, category, stock, unitCost, price, leadTimeDays, safetyStock } = req.body;
+  const { name, sku, category, stock, unitCost, price, leadTimeDays, safetyStock, qtyPerUnit, qtyUnitLabel } = req.body;
   if (!name || !sku) return res.status(400).json({ error: "name and sku are required" });
 
   const pricingError = validatePricing(unitCost, price);
@@ -96,11 +111,12 @@ router.post("/", (req, res) => {
   const id = randomUUID();
   try {
     db.prepare(`
-      INSERT INTO products (id, name, sku, category, stock, unit_cost, price, lead_time_days, safety_stock)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (id, name, sku, category, stock, unit_cost, price, lead_time_days, safety_stock, qty_per_unit, qty_unit_label)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id, name, sku, category || "", Number(stock) || 0, Number(unitCost) || 0,
-      Number(price) || 0, Number(leadTimeDays) || 14, Number(safetyStock) || 0
+      Number(price) || 0, Number(leadTimeDays) || 14, Number(safetyStock) || 0,
+      Math.max(0, Number(qtyPerUnit) || 0), String(qtyUnitLabel || "").trim().slice(0, 20)
     );
   } catch (err) {
     if (String(err.message).includes("UNIQUE")) {
@@ -130,11 +146,13 @@ router.put("/:id", (req, res) => {
   const pricingError = validatePricing(merged.unitCost, merged.price);
   if (pricingError) return res.status(400).json(pricingError);
   db.prepare(`
-    UPDATE products SET name=?, sku=?, category=?, stock=?, unit_cost=?, price=?, lead_time_days=?, safety_stock=?
+    UPDATE products SET name=?, sku=?, category=?, stock=?, unit_cost=?, price=?, lead_time_days=?, safety_stock=?, qty_per_unit=?, qty_unit_label=?
     WHERE id=?
   `).run(
     merged.name, merged.sku, merged.category, Number(merged.stock), Number(merged.unitCost),
-    Number(merged.price), Number(merged.leadTimeDays), Number(merged.safetyStock), req.params.id
+    Number(merged.price), Number(merged.leadTimeDays), Number(merged.safetyStock),
+    Math.max(0, Number(merged.qtyPerUnit) || 0), String(merged.qtyUnitLabel || "").trim().slice(0, 20),
+    req.params.id
   );
 
   const row = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);

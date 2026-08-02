@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { db, withTransaction } from "../db.js";
+import { displayName } from "./products.js";
 
 export const router = Router();
 
@@ -8,13 +9,14 @@ router.get("/", (req, res) => {
   const rows = db.prepare(`
     SELECT ws.id, ws.product_id AS productId, p.name AS productName,
            p.sku AS productSku, p.price AS unitPrice, ws.units,
-           ws.week_index AS weekIndex, ws.recorded_at AS recordedAt
+           ws.week_index AS weekIndex, ws.recorded_at AS recordedAt,
+           p.qty_per_unit, p.qty_unit_label
     FROM weekly_sales ws
     JOIN products p ON p.id = ws.product_id
     ORDER BY ws.recorded_at DESC, ws.week_index DESC
   `).all();
   res.json(rows.map(r => ({
-    id: r.id, productId: r.productId, productName: r.productName,
+    id: r.id, productId: r.productId, productName: displayName(r),
     productSku: r.productSku, units: r.units, unitPrice: r.unitPrice,
     totalValue: r.units * r.unitPrice, weekIndex: r.weekIndex, recordedAt: r.recordedAt,
   })));
@@ -63,7 +65,7 @@ router.post("/", (req, res) => {
 
       receiptItems.push({
         productId: product.id,
-        productName: product.name,
+        productName: displayName(product),
         productSku: product.sku,
         unitPrice: product.price,
         units,

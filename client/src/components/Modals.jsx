@@ -25,6 +25,7 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
 
   const [form, setForm] = useState(initial || {
     name: "", sku: "", category: "", stock: 0, unitCost: 0, price: 0, leadTimeDays: 14, safetyStock: 10,
+    qtyPerUnit: 0, qtyUnitLabel: "",
   });
   const [customOpen, setCustomOpen] = useState(isCustomInitial);
   const [customValue, setCustomValue] = useState(isCustomInitial ? initialCategory : "");
@@ -155,6 +156,21 @@ export function ProductModal({ initial, onClose, onSave, error, allCategories = 
           {numField("price", "Sale price", 500)}
           {numField("leadTimeDays", "Supplier lead time (days)")}
           {numField("safetyStock", "Safety stock (units)")}
+
+          <div style={{ gridColumn: "1 / -1", marginTop: 4 }}>
+            <div style={{ fontFamily: "Inter", fontSize: 12, fontWeight: 600, color: COLORS.ink, marginBottom: 6 }}>
+              Sold in bulk / packets? <span style={{ color: COLORS.sub, fontWeight: 400 }}>(optional)</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              {numField("qtyPerUnit", "Quantity per unit", 1)}
+              {numField("qtyUnitLabel", "Unit label")}
+            </div>
+            {Number(form.qtyPerUnit) > 0 && (
+              <div style={{ fontFamily: "Inter", fontSize: 12, color: COLORS.sub, marginTop: 6 }}>
+                Will display as: <strong style={{ color: COLORS.ink }}>{form.name || "(name)"} ({form.qtyPerUnit} {form.qtyUnitLabel || "units"})</strong>
+              </div>
+            )}
+          </div>
         </div>
 
         {(cost > 0 || price > 0) && (
@@ -194,7 +210,7 @@ export function SaleModal({ product, onClose, onRecord }) {
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>
-          {product.name} &middot; {product.sku} &middot; <strong>{product.stock} in stock</strong>
+          {product.displayName || product.name} &middot; {product.sku} &middot; <strong>{product.stock} in stock</strong>
         </p>
         {saleError && (
           <div style={{ background: COLORS.roseSoft, color: COLORS.rose, borderRadius: 8, padding: "8px 12px", fontFamily: "Inter", fontSize: 12.5, marginBottom: 12 }}>
@@ -243,7 +259,7 @@ export function ReceiveModal({ product, suggested, onClose, onReceive }) {
           <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 17, margin: 0 }}>Receive shipment</h3>
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
-        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.name} &middot; {product.sku}</p>
+        <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>{product.displayName || product.name} &middot; {product.sku}</p>
         <label style={fieldLabelStyle}>
           Units received
           <input type="number" min={0} value={units}
@@ -266,7 +282,7 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
     "PURCHASE ORDER",
     new Date().toLocaleDateString(),
     "",
-    ...items.map((i) => i.product.name + " (" + i.product.sku + ") - " + i.qty + " units - " + money(i.cost)),
+    ...items.map((i) => (i.product.displayName || i.product.name) + " (" + i.product.sku + ") - " + i.qty + " units - " + money(i.cost)),
     "",
     "Total: " + money(total),
   ].join("\n");
@@ -282,7 +298,7 @@ export function PurchaseOrderModal({ items, onClose, onConfirm }) {
         <div style={{ border: "1px solid " + COLORS.line, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
           {items.map((i) => (
             <div key={i.product.id} style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", borderBottom: "1px solid " + COLORS.line, fontFamily: "Inter", fontSize: 13 }}>
-              <span style={{ flex: 1 }}>{i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>{i.qty} units</span></span>
+              <span style={{ flex: 1 }}>{i.product.displayName || i.product.name} <span style={{ color: COLORS.sub, fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5 }}>{i.qty} units</span></span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{money(i.cost)}</span>
             </div>
           ))}

@@ -56,7 +56,7 @@ function CreateOrderModal({ products, onClose, onCreate }) {
           Product
           <select value={productId} onChange={(e) => handleProductChange(e.target.value)} style={{ ...inputStyle, fontFamily: "Inter" }}>
             {products.map((p) => (
-              <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+              <option key={p.id} value={p.id}>{(p.displayName || p.name)} ({p.sku})</option>
             ))}
           </select>
         </label>
@@ -94,7 +94,7 @@ function ReceiveModal({ order, onClose, onReceive }) {
           <button onClick={onClose} style={iconBtnStyle}><X size={18} /></button>
         </div>
         <p style={{ fontFamily: "Inter", fontSize: 13, color: COLORS.sub, marginTop: 0 }}>
-          {order.productName} &middot; {order.qty} units ordered
+          {order.displayName || order.productName} &middot; {order.qty} units ordered
         </p>
         <label style={fieldLabelStyle}>
           Units received
@@ -131,7 +131,7 @@ export default function OrderHistory() {
 
   const handleCreate = async (productId, qty, supplierName) => {
     try {
-      await api.createOrder(productId, qty, supplierName)
+      await api.createOrder(productId, qty, supplierName, "manual")
       setShowCreateModal(false)
       load()
     } catch (e) {
@@ -162,7 +162,7 @@ export default function OrderHistory() {
     if (filter !== "all" && o.status !== filter) return false
     if (search) {
       const q = search.toLowerCase()
-      const nameMatch = (o.productName || "").toLowerCase().includes(q)
+      const nameMatch = (o.displayName || o.productName || "").toLowerCase().includes(q)
       const skuMatch = (o.productSku || "").toLowerCase().includes(q)
       const supplierMatch = (o.supplierName || "").toLowerCase().includes(q)
       if (!nameMatch && !skuMatch && !supplierMatch) return false
@@ -173,7 +173,7 @@ export default function OrderHistory() {
   const exportCSV = () => {
     const h = ["Date Placed", "Product", "SKU", "Supplier", "Qty", "Status", "Date Received"]
     const r = filteredOrders.map((o) => [
-      o.placedAt, o.productName || "---", o.productSku || "---",
+      o.placedAt, o.displayName || o.productName || "---", o.productSku || "---",
       o.supplierName || "---", o.qty, o.status, o.receivedAt || "---",
     ])
     downloadCSV("orders-" + new Date().toISOString().slice(0, 10) + ".csv", [h, ...r])
@@ -261,13 +261,14 @@ export default function OrderHistory() {
                 <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, whiteSpace: "nowrap", padding: "12px 16px" }}>
                   {new Date(o.placedAt).toLocaleString()}
                 </td>
-                <td style={{ fontWeight: 500, padding: "12px 16px", fontFamily: "Inter", fontSize: 13.5 }}>{o.productName || "---"}</td>
+                <td style={{ fontWeight: 500, padding: "12px 16px", fontFamily: "Inter", fontSize: 13.5 }}>{o.displayName || o.productName || "---"}</td>
                 <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 12.5, color: COLORS.sub, padding: "12px 16px" }}>
                   {o.productSku || "---"}
                 </td>
                 <td style={{ fontFamily: "Inter", fontSize: 13, padding: "12px 16px" }}>
                   {o.supplierName || <span style={{ color: COLORS.sub, fontStyle: "italic" }}>N/A</span>}
                 </td>
+                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, padding: "12px 16px" }}>{o.qty}</td>
                 <td style={{ padding: "12px 16px" }}>
                   {o.source === "manual" ? (
                     <span style={{ fontFamily: "Inter", fontSize: 11, fontWeight: 600, color: COLORS.primary, background: COLORS.primarySoft, padding: "3px 8px", borderRadius: 20, display: "inline-flex", alignItems: "center", gap: 4 }}>
@@ -279,7 +280,6 @@ export default function OrderHistory() {
                     </span>
                   )}
                 </td>
-                <td style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, padding: "12px 16px" }}>{o.qty}</td>
                 <td style={{ padding: "12px 16px" }}><Badge status={o.status} /></td>
                 <td style={{ padding: "12px 16px" }}>
                   {o.status === "open" ? (
@@ -341,3 +341,4 @@ export default function OrderHistory() {
     </div>
   )
 }
+

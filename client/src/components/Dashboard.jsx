@@ -31,7 +31,7 @@ export default function Dashboard({ products, metrics, summary, needsAttention, 
             .map((p) => (
               <div key={p.id} onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                  <span style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 13.5, color: COLORS.ink }}>{p.name}</span>
+                  <span style={{ fontFamily: "Inter", fontWeight: 500, fontSize: 13.5, color: COLORS.ink }}>{p.displayName || p.name}</span>
                   <StatusPill status={metrics[p.id].status} />
                 </div>
                 <RunwayBar p={p} m={metrics[p.id]} />

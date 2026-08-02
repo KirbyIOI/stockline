@@ -78,7 +78,7 @@ export const api = {
   recordSale: (id, units) => request(`/products/${id}/sales`, { method: "POST", body: JSON.stringify({ units }) }),
 
   getOrders: (status) => request(`/orders${status ? `?status=${status}` : ""}`),
-  createOrder: (productId, qty, supplierName) => request("/orders", { method: "POST", body: JSON.stringify({ productId, qty, supplierName }) }),
+  createOrder: (productId, qty, supplierName, source) => request("/orders", { method: "POST", body: JSON.stringify({ productId, qty, supplierName, source }) }),
   cancelOrder: (id) => request(`/orders/${id}/cancel`, { method: "PATCH" }),
   receiveOrder: (id, units) => request(`/orders/${id}/receive`, { method: "PATCH", body: JSON.stringify({ units }) }),
 

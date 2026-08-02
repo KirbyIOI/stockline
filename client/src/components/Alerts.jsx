@@ -32,11 +32,11 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
     : (filter === "all" ? needsAttention : needsAttention.filter((p) => metrics[p.id].status === filter));
 
   const visible = pool
-    .filter((p) => p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
+    .filter((p) => (p.displayName || p.name).toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === "urgency") return metrics[a.id].daysOfStock - metrics[b.id].daysOfStock;
       if (sortBy === "cost") return metrics[b.id].suggestedOrder * b.unitCost - metrics[a.id].suggestedOrder * a.unitCost;
-      return a.name.localeCompare(b.name);
+      return (a.displayName || a.name).localeCompare(b.displayName || b.name);
     });
 
   const selectedProducts = visible.filter((p) => selected[p.id]);
@@ -47,7 +47,7 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
     const header = ["Name", "SKU", "Stock", "Reorder point", "Lead time (days)", "Days left", "Suggested order", "Suggested order cost", "Status"];
     const rows = visible.map((p) => {
       const m = metrics[p.id];
-      return [p.name, p.sku, p.stock, m.reorderPoint, p.leadTimeDays, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.suggestedOrder, m.suggestedOrder * p.unitCost, m.status];
+      return [p.displayName || p.name, p.sku, p.stock, m.reorderPoint, p.leadTimeDays, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.suggestedOrder, m.suggestedOrder * p.unitCost, m.status];
     });
     downloadCSV(`stockline-alerts-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   };
@@ -143,7 +143,7 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
                     onChange={(e) => setSelected((s) => ({ ...s, [p.id]: e.target.checked }))} />
                   <div style={{ flex: 1, cursor: "pointer" }} onClick={() => onSelectProduct(p.id)}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: "Inter", fontWeight: 600, fontSize: 14, color: COLORS.ink }}>{p.name}</span>
+                      <span style={{ fontFamily: "Inter", fontWeight: 600, fontSize: 14, color: COLORS.ink }}>{p.displayName || p.name}</span>
                       {(order || alertOrdered[p.id]) && (
                         <span style={{ fontFamily: "Inter", fontSize: 10.5, fontWeight: 600, color: COLORS.teal, background: COLORS.tealSoft, padding: "2px 8px", borderRadius: 20 }}>
                           On order · {order ? order.qty + ' units' : 'Awaiting'}
@@ -186,7 +186,7 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
           items={selectedProducts.map((p) => ({ product: p, qty: metrics[p.id].suggestedOrder, cost: metrics[p.id].suggestedOrder * p.unitCost }))}
           onClose={() => setPoOpen(false)}
           onConfirm={async () => {
-            for (const p of selectedProducts) await onPlaceOrder(p.id, metrics[p.id].suggestedOrder);
+            for (const p of selectedProducts) await onPlaceOrder(p.id, metrics[p.id].suggestedOrder, "alert");
             setSelected({});
             setPoOpen(false);
           }}
@@ -195,3 +195,4 @@ export default function Alerts({ products, needsAttention, metrics, orders, onSe
     </div>
   );
 }
+

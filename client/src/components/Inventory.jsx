@@ -4,12 +4,12 @@ import { COLORS, primaryBtnStyle, secondaryBtnStyle, iconBtnStyle } from "../sty
 import { SectionHeader, RunwayBar, StatusPill } from "./Shared.jsx";
 import { downloadCSV } from "../csv.js";
 
-export default function Inventory({ products, metrics, search, setSearch, onAdd, onEdit, onDelete, onSelectProduct }) {
+export default function Inventory({ products, metrics, search, setSearch, onAdd, onEdit, onDelete, onSelectProduct, isAdmin = false }) {
   const exportCSV = () => {
     const header = ["Name", "SKU", "Category", "Stock", "Reorder point", "Days runway", "Status", "Unit cost", "Price"];
     const rows = products.map((p) => {
       const m = metrics[p.id];
-      return [p.name, p.sku, p.category, p.stock, m.reorderPoint, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.status, p.unitCost, p.price];
+      return [p.displayName || p.name, p.sku, p.category, p.stock, m.reorderPoint, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.status, p.unitCost, p.price];
     });
     downloadCSV(`stockline-inventory-${new Date().getISOString().slice(0, 10)}.csv`, [header, ...rows]);
   };
@@ -22,9 +22,11 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
             <button onClick={exportCSV} style={secondaryBtnStyle}>
               <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Download size={15} /> Export CSV</span>
             </button>
-            <button onClick={onAdd} style={primaryBtnStyle}>
-              <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Plus size={15} /> Add product</span>
-            </button>
+            {isAdmin && (
+              <button onClick={onAdd} style={primaryBtnStyle}>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Plus size={15} /> Add product</span>
+              </button>
+            )}
           </div>
         }
       />
@@ -49,7 +51,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                 <tr key={p.id} className="row-hover">
                   <td>
                     <div onClick={() => onSelectProduct(p.id)} style={{ cursor: "pointer" }}>
-                      <div style={{ fontWeight: 600 }}>{p.name}</div>
+                      <div style={{ fontWeight: 600 }}>{p.displayName || p.name}</div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, color: COLORS.sub }}>{p.sku}</div>
                       </div>
                   </td>
@@ -64,21 +66,25 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
-                      <button
-                        title="Edit product"
-                        onClick={() => onEdit(p)}
-                        style={{
-                          ...iconBtnStyle, background: "#FFF3E0", color: "#E65100",
-                          fontSize: 11, padding: "6px 8px", borderRadius: 8,
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                          border: "1px solid #FFE0B2",
-                        }}
-                      >
-                        <Pencil size={12} /> Edit
-                      </button>
-                      <button title="Delete" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
-                    </div>
+                    {isAdmin ? (
+                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                        <button
+                          title="Edit product"
+                          onClick={() => onEdit(p)}
+                          style={{
+                            ...iconBtnStyle, background: "#FFF3E0", color: "#E65100",
+                            fontSize: 11, padding: "6px 8px", borderRadius: 8,
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            border: "1px solid #FFE0B2",
+                          }}
+                        >
+                          <Pencil size={12} /> Edit
+                        </button>
+                        <button title="Delete" onClick={() => onDelete(p.id)} style={iconBtnStyle}><Trash2 size={15} color={COLORS.rose} /></button>
+                      </div>
+                    ) : (
+                      <span style={{ color: COLORS.sub, fontFamily: "Inter", fontSize: 11.5 }}>View only</span>
+                    )}
                   </td>
                 </tr>
               );

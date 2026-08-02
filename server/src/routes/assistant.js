@@ -193,7 +193,7 @@ function buildBusinessContext() {
     totalInventoryValue += product.stock * product.unitCost;
 
     lines.push(
-      `- ${row.name} (SKU ${row.sku}, ${row.category || "uncategorized"}): ${row.stock} units in stock, ` +
+      `- ${row.name}${row.qty_per_unit && row.qty_unit_label ? ` (${row.qty_per_unit} ${row.qty_unit_label})` : ""} (SKU ${row.sku}, ${row.category || "uncategorized"}): ${row.stock} units in stock, ` +
       `status=${m.status}, reorder point ${m.reorderPoint}, ${Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) + " days" : "no sales history"} of runway, ` +
       `avg ${m.avgWeekly.toFixed(1)} units/week, suggested reorder ${m.suggestedOrder} units (${cur(m.suggestedOrder * product.unitCost)}), ` +
       `unit cost ${cur(product.unitCost)}, sale price ${cur(product.price)}, lead time ${product.leadTimeDays}d.`
