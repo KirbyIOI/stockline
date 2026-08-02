@@ -24,7 +24,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
             </button>
             {isAdmin && (
               <button onClick={onAdd} style={primaryBtnStyle}>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Plus size={15} /> Add product</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Plus size={15} /> Add new product</span>
               </button>
             )}
           </div>
