@@ -7,7 +7,7 @@ export const router = Router();
 
 router.get("/", (req, res) => {
   const rows = db.prepare(`
-    SELECT ws.id, ws.product_id AS productId, p.name AS productName,
+    SELECT ws.id, ws.product_id AS productId, p.name,
            p.sku AS productSku, p.price AS unitPrice, ws.units,
            ws.week_index AS weekIndex, ws.recorded_at AS recordedAt,
            p.qty_per_unit, p.qty_unit_label

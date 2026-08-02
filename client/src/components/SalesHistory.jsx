@@ -15,7 +15,7 @@ export default function SalesHistory() {
     api.salesHistory().then(setSales).catch(e => setError(e.message)).finally(() => setLoading(false));
   }, []);
 
-  const f = sales.filter(s => s.productName.toLowerCase().includes(search.toLowerCase()) || s.productSku.toLowerCase().includes(search.toLowerCase()));
+  const f = sales.filter(s => (s.productName || "").toLowerCase().includes(search.toLowerCase()) || (s.productSku || "").toLowerCase().includes(search.toLowerCase()));
   const rev = f.reduce((a,s) => a + s.totalValue, 0);
   const units = f.reduce((a,s) => a + s.units, 0);
 
