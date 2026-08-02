@@ -6,7 +6,7 @@ import { displayName } from "./products.js";
 export const router = Router();
 
 const SELECT_JOIN = `
-  SELECT o.*, p.name AS productName, p.sku AS productSku,
+  SELECT o.*, p.name, p.sku AS productSku,
          p.qty_per_unit, p.qty_unit_label
   FROM orders o JOIN products p ON p.id = o.product_id
 `;
@@ -15,8 +15,8 @@ function toOrderShape(row) {
   return {
     id: row.id,
     productId: row.product_id,
-    productName: row.productName || null,
-    displayName: row.productName ? displayName(row) : null,
+    productName: row.name || null,
+    displayName: row.name ? displayName(row) : null,
     productSku: row.productSku || null,
     source: row.order_source || 'alert',
     qty: row.qty,
