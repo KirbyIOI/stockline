@@ -66,20 +66,25 @@ const SUPPLIERS = [
   "Zanzibar Imports Ltd",
 ];
 
-// Historical purchase orders seeded alongside the sample products — a mix of
-// received, open, and cancelled, placed over the past ~10 weeks, and split
-// between manual POs and system-generated ("alert") reorder suggestions.
+// Historical purchase orders seeded alongside the sample products — all
+// received or cancelled, placed over the past ~10 weeks, and split between
+// manual POs and system-generated ("alert") reorder suggestions.
+//
+// IMPORTANT: no "open" orders are ever seeded. On a fresh install the
+// Purchase Orders page starts completely clean, so there is nothing to
+// accidentally "receive" (which would add stock) before the owner places
+// their first real order.
 const SEED_ORDERS = [
   { product: "Wimbi Flour", qty: 100, status: "received", weeksAgo: 9, source: "manual" },
-  { product: "Wimbi Flour", qty: 80, status: "open", weeksAgo: 1, source: "alert" },
+  { product: "Wimbi Flour", qty: 80, status: "received", weeksAgo: 1, source: "alert" },
   { product: "Jerrican Cooking Oil", qty: 40, status: "received", weeksAgo: 7, source: "alert" },
   { product: "Jerrican Cooking Oil", qty: 50, status: "received", weeksAgo: 3, source: "manual" },
   { product: "Kitenge Fabric", qty: 120, status: "received", weeksAgo: 8, source: "manual" },
-  { product: "Kitenge Fabric", qty: 90, status: "open", weeksAgo: 2, source: "alert" },
+  { product: "Kitenge Fabric", qty: 90, status: "received", weeksAgo: 2, source: "alert" },
   { product: "Crown Cement", qty: 200, status: "received", weeksAgo: 6, source: "manual" },
   { product: "Crown Cement", qty: 150, status: "cancelled", weeksAgo: 4, source: "alert" },
   { product: "Solar Home Lantern Kit", qty: 30, status: "received", weeksAgo: 10, source: "manual" },
-  { product: "Solar Home Lantern Kit", qty: 25, status: "open", weeksAgo: 1, source: "alert" },
+  { product: "Solar Home Lantern Kit", qty: 25, status: "received", weeksAgo: 1, source: "alert" },
   { product: "Kiondoo Woven Basket", qty: 60, status: "received", weeksAgo: 5, source: "alert" },
   { product: "Kiondoo Woven Basket", qty: 40, status: "received", weeksAgo: 2, source: "manual" },
 ];

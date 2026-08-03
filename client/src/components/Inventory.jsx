@@ -11,7 +11,7 @@ export default function Inventory({ products, metrics, search, setSearch, onAdd,
       const m = metrics[p.id];
       return [p.displayName || p.name, p.sku, p.category, p.stock, m.reorderPoint, Number.isFinite(m.daysOfStock) ? Math.round(m.daysOfStock) : "", m.status, p.unitCost, p.price];
     });
-    downloadCSV(`stockline-inventory-${new Date().getISOString().slice(0, 10)}.csv`, [header, ...rows]);
+    downloadCSV(`stockline-inventory-${new Date().toISOString().slice(0, 10)}.csv`, [header, ...rows]);
   };
   return (
     <div>

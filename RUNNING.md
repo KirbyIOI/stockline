@@ -134,7 +134,7 @@ A quick way to generate one: in your terminal, type
 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 and paste the result in.
 
-Leave `ANTHROPIC_API_KEY` blank for now — that's for the optional AI
+Leave `GEMINI_API_KEY` blank for now — that's for the optional AI
 assistant feature, covered in Step 7.
 
 Save the file and close it.
@@ -222,20 +222,18 @@ questions like *"what should I reorder this week?"* using your real
 inventory data. It's off by default and the rest of the app works fine
 without it.
 
-1. Go to **[console.anthropic.com](https://console.anthropic.com)** and
-   create an account
-2. Create an API key (there's a clear "Get API Keys" or "Create Key" button
-   in the console)
-3. Open `server/.env` again and paste your key in:
+1. Go to **[aistudio.google.com/apikey](https://aistudio.google.com/apikey)** and
+   create an API key
+2. Open `server/.env` again and paste your key in:
    ```
-   ANTHROPIC_API_KEY=sk-ant-your-key-here
+   GEMINI_API_KEY=your-gemini-key-here
    ```
 4. Save the file and restart the backend (go to its terminal window, press
    `Ctrl + C`, then run `npm run dev` again)
 
 A small sparkle button will now appear in the bottom-right corner of the
-app. Using this feature sends your product/stock data to Anthropic's API
-each time you ask a question, and usage is billed by Anthropic based on your
+app. Using this feature sends your product/stock data to Google's Gemini API
+each time you ask a question, and usage is billed by Google based on your
 account — check their pricing page before heavy use.
 
 ---

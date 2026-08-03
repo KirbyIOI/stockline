@@ -82,7 +82,7 @@ Render deploys from a GitHub repository.
      you know it (e.g. `https://stockline.onrender.com`) — this deployment
      serves the frontend from the same service, so it's not strictly
      required, but setting it tightens security
-   - `ANTHROPIC_API_KEY` — optional, only if you want the AI assistant (see
+   - `GEMINI_API_KEY` — optional, only if you want the AI assistant (see
      the "AI assistant" section below)
 5. Click **Create Web Service**
 
@@ -193,16 +193,16 @@ Redeploy the backend for the change to take effect.
 ## Setting up the AI assistant on any host
 
 The "Ask Stockline" chat feature works the same way in production as
-locally: it's controlled entirely by whether `ANTHROPIC_API_KEY` is set.
+locally: it's controlled entirely by whether `GEMINI_API_KEY` is set.
 
-1. Get a key from [console.anthropic.com](https://console.anthropic.com)
-2. Add it as an environment variable named `ANTHROPIC_API_KEY` in your
+1. Get a key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Add it as an environment variable named `GEMINI_API_KEY` in your
    host's dashboard (Render, or wherever your backend runs) — never put it
    in a file you upload to GitHub
 3. Redeploy. The chat button appears automatically once the key is valid.
 
-Usage of this feature is billed by Anthropic to whichever account owns the
-API key — check current pricing at anthropic.com before enabling it for a
+Usage of this feature is billed by Google to whichever account owns the
+API key — check current pricing at aistudio.google.com before enabling it for a
 busy team.
 
 ---
@@ -219,7 +219,7 @@ busy team.
       use this — don't find out the hard way that a week of sales data
       disappeared
 - [ ] If you enabled the AI assistant, you're comfortable with your
-      inventory data being sent to Anthropic's API on each question asked
+      inventory data being sent to Google's Gemini API on each question asked
 
 ---
 

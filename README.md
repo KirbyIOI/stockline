@@ -50,7 +50,7 @@ Settings → Team page in the app, and those env vars are no longer consulted. S
 assistant answers), forecasting method, team management (admin), and a "change my password"
 form (everyone).
 
-**AI assistant ("Ask Stockline")** — an optional chat widget, powered by the Claude API, that can
+**AI assistant ("Ask Stockline")** — an optional chat widget, powered by the Gemini API, that can
 answer questions like *"what should I reorder this week?"* or *"which products are trending
 down?"* using your actual, live product and order data — including your configured currency,
 company name, and forecasting method — as context. It's off by default and the rest of the app
@@ -133,7 +133,7 @@ and `PUT /api/settings`, additionally require an admin account.
 | PATCH | `/api/users/:id/password` | Reset a user's password `{ password }` — **admin only** |
 | DELETE | `/api/users/:id` | Remove a team account — **admin only** |
 | GET | `/api/assistant/status` | `{ enabled, model }` — whether the AI assistant is configured |
-| POST | `/api/assistant/chat` | `{ message, history }` → `{ reply }`, requires `ANTHROPIC_API_KEY` |
+| POST | `/api/assistant/chat` | `{ message, history }` → `{ reply }`, requires `GEMINI_API_KEY` |
 
 ## Production build
 
